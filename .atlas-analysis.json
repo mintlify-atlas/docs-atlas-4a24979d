@@ -1,0 +1,182 @@
+{
+  "projectType": "saas",
+  "projectName": "SaludMap",
+  "projectDescription": "A healthcare facility locator with real-time map search, appointment booking, reviews, and offline support",
+  "theme": "almond",
+  "primaryColor": "#66b09d",
+  "lightColor": "#9EE2CF",
+  "darkColor": "#4daa90",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/map-search",
+              "features/appointments",
+              "features/reviews",
+              "features/offline-mode",
+              "features/chatbot",
+              "features/emergency"
+            ]
+          },
+          {
+            "group": "User Guide",
+            "pages": [
+              "guide/authentication",
+              "guide/finding-facilities",
+              "guide/booking-appointments",
+              "guide/writing-reviews",
+              "guide/saved-locations",
+              "guide/internationalization"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/theme",
+              "configuration/environment",
+              "configuration/database"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Authentication",
+            "pages": [
+              "api/auth/login",
+              "api/auth/register"
+            ]
+          },
+          {
+            "group": "Places",
+            "pages": [
+              "api/places/search",
+              "api/places/nearby"
+            ]
+          },
+          {
+            "group": "Establishments",
+            "pages": [
+              "api/establishments/list",
+              "api/establishments/create",
+              "api/establishments/get-by-coords",
+              "api/establishments/get-by-id"
+            ]
+          },
+          {
+            "group": "Appointments",
+            "pages": [
+              "api/appointments/create",
+              "api/appointments/list",
+              "api/appointments/update",
+              "api/appointments/delete"
+            ]
+          },
+          {
+            "group": "Reviews",
+            "pages": [
+              "api/reviews/create",
+              "api/reviews/list",
+              "api/reviews/get-by-establishment"
+            ]
+          },
+          {
+            "group": "Specialties",
+            "pages": [
+              "api/specialties/list",
+              "api/specialties/create"
+            ]
+          },
+          {
+            "group": "Users",
+            "pages": [
+              "api/users/profile",
+              "api/users/update"
+            ]
+          },
+          {
+            "group": "Chatbot",
+            "pages": [
+              "api/chatbot/chat"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Development",
+        "groups": [
+          {
+            "group": "Architecture",
+            "pages": [
+              "development/architecture",
+              "development/database-schema",
+              "development/frontend-structure",
+              "development/backend-structure"
+            ]
+          },
+          {
+            "group": "Development Setup",
+            "pages": [
+              "development/local-setup",
+              "development/running-servers",
+              "development/testing"
+            ]
+          },
+          {
+            "group": "Contributing",
+            "pages": [
+              "development/contributing",
+              "development/code-style"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Interactive map-based search for healthcare facilities",
+    "Real-time appointment booking system (turnos)",
+    "User reviews and ratings for establishments",
+    "Offline mode with tile and data caching",
+    "AI-powered chatbot assistant (Google Gemini)",
+    "Multi-language support (i18n)",
+    "Emergency widget for quick access",
+    "Dark/Light theme support",
+    "Saved locations management",
+    "Geolocation and auto-centering"
+  ],
+  "publicApiSurface": [
+    "POST /auth/login",
+    "POST /auth/register",
+    "GET /places",
+    "GET /establecimientos",
+    "POST /establecimientos",
+    "GET /establecimientos/:id",
+    "GET /establecimientos/coords/:lat/:lng",
+    "GET /turnos",
+    "POST /turnos",
+    "PUT /turnos/:id",
+    "DELETE /turnos/:id",
+    "GET /resenias",
+    "POST /resenias",
+    "GET /resenias/establecimiento/:id",
+    "GET /especialidades",
+    "POST /especialidades",
+    "GET /usuarios/profile",
+    "POST /chatbot/chat"
+  ]
+}
