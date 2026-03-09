@@ -1,0 +1,131 @@
+---
+title: 'Get Establishment Specialties'
+api: 'GET /establecimientos/:id/especialidades'
+description: 'Retrieve all medical specialties available at a specific establishment'
+---
+
+## Overview
+
+Fetch a list of all medical specialties offered by a healthcare establishment. Returns specialty details along with availability schedules specific to each establishment-specialty relationship.
+
+## Path Parameters
+
+<ParamField path="id" type="number" required>
+  Unique identifier of the establishment.
+  
+  **Example:** `42`
+</ParamField>
+
+## Response
+
+Returns an array of specialty objects, ordered alphabetically by specialty name:
+
+<ResponseField name="id" type="number">
+  Unique specialty identifier
+</ResponseField>
+
+<ResponseField name="nombre" type="string">
+  Specialty name (e.g., "Cardiología", "Pediatría", "Dermatología")
+</ResponseField>
+
+<ResponseField name="descripcion" type="string | null">
+  Description of the medical specialty and what it covers
+</ResponseField>
+
+<ResponseField name="horariosDisponibles" type="string | null">
+  Available schedule for this specialty at this specific establishment. 
+  
+  This comes from the establishment-specialty relationship and may differ from the establishment's general operating hours.
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X GET "https://api.saludmap.com/establecimientos/42/especialidades"
+```
+
+## Example Response
+
+```json
+[
+  {
+    "id": 1,
+    "nombre": "Cardiología",
+    "descripcion": "Diagnóstico y tratamiento de enfermedades del corazón y sistema circulatorio",
+    "horariosDisponibles": "Lunes a Viernes 9:00-17:00"
+  },
+  {
+    "id": 2,
+    "nombre": "Dermatología",
+    "descripcion": "Diagnóstico y tratamiento de enfermedades de la piel",
+    "horariosDisponibles": "Lunes, Miércoles y Viernes 9:00-13:00"
+  },
+  {
+    "id": 5,
+    "nombre": "Pediatría",
+    "descripcion": "Atención médica especializada para niños y adolescentes",
+    "horariosDisponibles": null
+  },
+  {
+    "id": 8,
+    "nombre": "Traumatología",
+    "descripcion": "Tratamiento de lesiones del sistema musculoesquelético",
+    "horariosDisponibles": "Martes y Jueves 14:00-19:00"
+  }
+]
+```
+
+## Example Response (No Specialties)
+
+```json
+[]
+```
+
+## Error Responses
+
+### 400 Bad Request
+
+Returned when the ID parameter is not a valid integer:
+
+```json
+{
+  "statusCode": 400,
+  "message": "Validation failed (numeric string is expected)",
+  "error": "Bad Request"
+}
+```
+
+### 404 Not Found
+
+Returned when no establishment exists with the specified ID:
+
+```json
+{
+  "statusCode": 404,
+  "message": "Establecimiento no encontrado",
+  "error": "Not Found"
+}
+```
+
+## Use Cases
+
+- **Service Directory**: Display all medical services available at an establishment
+- **Appointment Booking**: Show available specialties with their schedules for booking
+- **Specialty Filtering**: Allow users to filter establishments by available specialties
+- **Availability Information**: Show when specific medical services are offered
+- **Facility Comparison**: Compare which specialties are available at different locations
+
+## Related Endpoints
+
+- `GET /establecimientos/:id` - Get establishment details (includes specialties with full relationship data)
+- `GET /establecimientos/especialidad/:especialidadId` - Find all establishments offering a specific specialty
+- `GET /especialidades` - List all available specialties in the system
+
+## Notes
+
+- Results are ordered alphabetically by specialty name for easy browsing
+- The `horariosDisponibles` field is specific to the establishment-specialty relationship
+- Returns an empty array `[]` if the establishment has no associated specialties
+- The establishment must exist or a 404 error is thrown
+- This endpoint validates establishment existence before querying specialties
+- The response format is simplified compared to the full establishment endpoint (only essential specialty fields)

@@ -1,0 +1,204 @@
+---
+title: 'Validate Review Eligibility'
+api: 'GET /resenias/validar/:turnoId'
+---
+
+Validates whether the authenticated user can leave a review for a specific appointment. This endpoint performs comprehensive checks including appointment ownership, existing reviews, cancellation status, and timing requirements.
+
+<Note>
+  This endpoint requires authentication. Include a valid JWT token in the Authorization header.
+</Note>
+
+## Path Parameters
+
+<ParamField path="turnoId" type="number" required>
+  The unique identifier of the appointment to validate
+</ParamField>
+
+## Authentication
+
+Requires a valid JWT token in the Authorization header:
+
+```
+Authorization: Bearer <your-jwt-token>
+```
+
+The user ID is automatically extracted from the JWT token.
+
+## Response
+
+### Success Response
+
+<ResponseField name="valido" type="boolean">
+  Whether the user can leave a review (always true on success)
+</ResponseField>
+
+<ResponseField name="mensaje" type="string">
+  Confirmation message (e.g., "Puede dejar una reseña")
+</ResponseField>
+
+<ResponseField name="turno" type="object">
+  Full appointment details including relationships
+  
+  <ResponseField name="id" type="number">
+    Appointment ID
+  </ResponseField>
+  
+  <ResponseField name="usuarioId" type="number">
+    User ID who owns the appointment
+  </ResponseField>
+  
+  <ResponseField name="establecimientoId" type="number">
+    Establishment ID
+  </ResponseField>
+  
+  <ResponseField name="especialidadId" type="number">
+    Medical specialty ID
+  </ResponseField>
+  
+  <ResponseField name="fecha" type="string">
+    Appointment date (ISO 8601 format)
+  </ResponseField>
+  
+  <ResponseField name="hora" type="string">
+    Appointment time (HH:MM format)
+  </ResponseField>
+  
+  <ResponseField name="estado" type="string">
+    Appointment status
+  </ResponseField>
+  
+  <ResponseField name="usuario" type="object">
+    User information
+  </ResponseField>
+  
+  <ResponseField name="resenia" type="object | null">
+    Existing review (null if validation passes)
+  </ResponseField>
+  
+  <ResponseField name="establecimiento" type="object">
+    Establishment information
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X GET https://api.example.com/resenias/validar/1001 \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+## Example Response
+
+### Valid (Can Review)
+
+```json
+{
+  "valido": true,
+  "mensaje": "Puede dejar una reseña",
+  "turno": {
+    "id": 1001,
+    "usuarioId": 123,
+    "establecimientoId": 45,
+    "especialidadId": 3,
+    "fecha": "2026-03-08T00:00:00.000Z",
+    "hora": "14:30",
+    "estado": "completado",
+    "usuario": {
+      "id": 123,
+      "nombre": "Juan",
+      "apellido": "Pérez",
+      "mail": "juan.perez@example.com"
+    },
+    "resenia": null,
+    "establecimiento": {
+      "id": 45,
+      "nombre": "Centro Médico San Rafael",
+      "direccion": "Av. Corrientes 1234, Buenos Aires"
+    }
+  }
+}
+```
+
+## Error Responses
+
+### Appointment Not Found
+
+```json
+{
+  "statusCode": 404,
+  "message": "Turno no encontrado",
+  "error": "Not Found"
+}
+```
+
+### Appointment Doesn't Belong to User
+
+```json
+{
+  "statusCode": 403,
+  "message": "El turno no pertenece al usuario",
+  "error": "Forbidden"
+}
+```
+
+### Review Already Exists
+
+```json
+{
+  "statusCode": 409,
+  "message": "Ya existe una reseña para este turno",
+  "error": "Conflict"
+}
+```
+
+### Appointment Is Cancelled
+
+```json
+{
+  "statusCode": 400,
+  "message": "No puede reseñar un turno cancelado",
+  "error": "Bad Request"
+}
+```
+
+### Appointment Hasn't Occurred Yet
+
+```json
+{
+  "statusCode": 400,
+  "message": "No puede reseñar un turno que aún no ha ocurrido",
+  "error": "Bad Request"
+}
+```
+
+### Unauthorized
+
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized",
+  "error": "Unauthorized"
+}
+```
+
+## Validation Rules
+
+The endpoint checks the following conditions in order:
+
+1. **Appointment exists**: The appointment must exist in the system
+2. **Ownership**: The appointment must belong to the authenticated user
+3. **No existing review**: No review can already exist for this appointment
+4. **Not cancelled**: The appointment status cannot be "cancelado" or "cancelled"
+5. **Has occurred**: The appointment date/time must have passed (with a 2-hour grace period for testing)
+
+<Tip>
+  Use this endpoint before showing the review form to provide immediate feedback to users about whether they can leave a review.
+</Tip>
+
+## Use Cases
+
+- Pre-validate before displaying the review submission form
+- Provide clear error messages explaining why a user cannot review
+- Prevent invalid review submissions by checking eligibility upfront
+- Display appointment context when allowing reviews

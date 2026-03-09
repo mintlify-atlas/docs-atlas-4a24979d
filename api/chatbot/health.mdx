@@ -1,0 +1,45 @@
+---
+title: "Chatbot Health Check"
+api: "GET /chatbot/health"
+---
+
+Check the health status of the chatbot service. This endpoint is useful for monitoring and ensuring the service is running correctly.
+
+## Response
+
+<ResponseField name="success" type="boolean">
+  Always returns true if the service is running
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Status message indicating the service is operational
+</ResponseField>
+
+<ResponseField name="timestamp" type="string">
+  ISO 8601 timestamp of the health check
+</ResponseField>
+
+<ResponseField name="version" type="string">
+  Current version of the chatbot service (from CHATBOT_VERSION environment variable, defaults to '1.0.0')
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X GET https://api.example.com/chatbot/health
+```
+
+## Example Response
+
+```json
+{
+  "success": true,
+  "message": "Chatbot service is running",
+  "timestamp": "2026-03-09T10:30:45.123Z",
+  "version": "1.0.0"
+}
+```
+
+## Notes
+
+This endpoint does not require authentication and can be freely accessed for monitoring purposes.

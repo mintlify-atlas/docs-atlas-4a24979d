@@ -1,0 +1,276 @@
+---
+title: 'Analytics Dashboard'
+description: 'View and export facility statistics with interactive charts and Excel reports'
+icon: 'chart-bar'
+---
+
+## Overview
+
+The Analytics Dashboard provides comprehensive statistics for healthcare facilities, veterinary clinics, and medical offices. It displays real-time data visualization using interactive charts and allows exporting detailed reports to Excel format.
+
+## Features
+
+### Interactive Chart Visualization
+
+The dashboard displays two types of charts powered by Chart.js:
+
+1. **Bar Chart** - Shows the most requested services by specialty
+2. **Line Chart** - Displays patient traffic by time of day
+
+<CodeGroup>
+```jsx Analytics Component
+import { Bar, Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend
+);
+```
+</CodeGroup>
+
+### Facility Type-Specific Analytics
+
+The analytics automatically adapt based on the facility type:
+
+<AccordionGroup>
+  <Accordion title="Hospital" icon="hospital">
+    - Emergencias (Emergency)
+    - Pediatría (Pediatrics)
+    - Traumatología (Traumatology)
+    - Cardiología (Cardiology)
+    - Cirugía (Surgery)
+  </Accordion>
+  
+  <Accordion title="Clinic" icon="stethoscope">
+    - Medicina General (General Medicine)
+    - Pediatría (Pediatrics)
+    - Ginecología (Gynecology)
+    - Traumatología (Traumatology)
+    - Oftalmología (Ophthalmology)
+  </Accordion>
+  
+  <Accordion title="Veterinary" icon="paw">
+    - Vacunación (Vaccination)
+    - Control General (General Check-up)
+    - Cirugías (Surgeries)
+    - Urgencias (Emergencies)
+    - Peluquería (Grooming)
+  </Accordion>
+  
+  <Accordion title="Doctors Office" icon="user-doctor">
+    - Consultas Generales (General Consultations)
+    - Controles (Check-ups)
+    - Estudios (Studies)
+    - Urgencias (Emergencies)
+  </Accordion>
+</AccordionGroup>
+
+### Type Detection Logic
+
+The system automatically detects facility types from OpenStreetMap data:
+
+```jsx Type Detection (Analytics.jsx:33-44)
+const getTypeFromPlace = (place) => {
+  const tags = place.tags ?? place.properties ?? {};
+  const amenity = (tags.amenity || tags.healthcare || '').toString().toLowerCase();
+  const name = (tags.name || '').toString().toLowerCase();
+
+  if (amenity.includes('hospital') || name.includes('hospital')) return 'hospital';
+  if (amenity.includes('clinic') || name.includes('clínica') || name.includes('clinic')) return 'clinic';
+  if (amenity.includes('veterinary') || name.includes('veterin')) return 'veterinary';
+  if (amenity.includes('doctor') || name.includes('doctor') || name.includes('médic')) return 'doctors';
+
+  return 'default';
+};
+```
+
+## Excel Export Functionality
+
+### Export Features
+
+The Excel export generates a comprehensive workbook with multiple sheets:
+
+<CardGroup cols={3}>
+  <Card title="Services Sheet" icon="list">
+    Service statistics with quantities and percentages
+  </Card>
+  <Card title="Schedule Sheet" icon="clock">
+    Patient traffic by time slot with occupancy rates
+  </Card>
+  <Card title="Summary Sheet" icon="file-lines">
+    Overall statistics and key metrics
+  </Card>
+</CardGroup>
+
+### Implementation
+
+The export uses **ExcelJS** for advanced formatting and **file-saver** for downloads:
+
+```jsx Export Function (Analytics.jsx:120-227)
+const exportToExcel = async () => {
+  try {
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'SaludMap';
+    workbook.created = new Date();
+
+    // Services Sheet
+    const wsServicios = workbook.addWorksheet('Servicios');
+    wsServicios.columns = [
+      { header: 'Servicio', key: 'servicio', width: 20 },
+      { header: 'Cantidad', key: 'cantidad', width: 15 },
+      { header: 'Porcentaje', key: 'porcentaje', width: 15 }
+    ];
+
+    // Style headers
+    wsServicios.getRow(1).font = { bold: true, color: { argb: '47472E' } };
+    wsServicios.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE0A6' }
+    };
+
+    // Add data
+    const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+    data.labels.forEach((label, index) => {
+      const cantidad = data.datasets[0].data[index];
+      wsServicios.addRow({
+        servicio: label,
+        cantidad: cantidad,
+        porcentaje: `${((cantidad/total) * 100).toFixed(1)}%`
+      });
+    });
+
+    // Generate and download
+    const buffer = await workbook.xlsx.writeBuffer();
+    const fileName = `Estadisticas_${place.tags?.name || 'Establecimiento'}_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`;
+    saveAs(new Blob([buffer]), fileName);
+
+  } catch (error) {
+    toast.error('Error al exportar los datos');
+  }
+};
+```
+
+### Dependencies
+
+<CodeGroup>
+```json package.json
+{
+  "dependencies": {
+    "xlsx": "^0.18.x",
+    "exceljs": "^4.3.x",
+    "file-saver": "^2.0.x",
+    "chart.js": "^4.x.x",
+    "react-chartjs-2": "^5.x.x"
+  }
+}
+```
+</CodeGroup>
+
+## Accessing Analytics
+
+### From the UI
+
+The Analytics Dashboard can be accessed from facility detail views:
+
+<Steps>
+  <Step title="Select a Facility">
+    Click on any healthcare facility marker on the map
+  </Step>
+  <Step title="View Details">
+    The facility information panel will open
+  </Step>
+  <Step title="Open Analytics">
+    Navigate to the Analytics tab to view statistics
+  </Step>
+  <Step title="Export Data">
+    Click the "📊 Exportar a Excel" button to download the report
+  </Step>
+</Steps>
+
+### Usage Example
+
+```jsx Using Analytics Component
+import Analytics from './components/Analytics/Analytics';
+
+function FacilityDetails({ facility }) {
+  return (
+    <div>
+      <h2>{facility.name}</h2>
+      <Analytics 
+        establecimientoId={facility.id}
+        place={facility}
+      />
+    </div>
+  );
+}
+```
+
+## Chart Data Structure
+
+### Bar Chart Data
+
+```jsx Services Chart Data
+const data = {
+  labels: ['Emergencias', 'Pediatría', 'Traumatología', 'Cardiología', 'Cirugía'],
+  title: 'Estadísticas del Hospital',
+  datasets: [{
+    label: 'Consultas por especialidad',
+    data: [85, 72, 63, 91, 54],
+    backgroundColor: ['#FF6B6B', '#FFD700', '#4ECDC4', '#45B7D1', '#FFA500'],
+  }]
+};
+```
+
+### Line Chart Data
+
+```jsx Hourly Traffic Data
+const hourlyData = {
+  labels: ['8:00', '10:00', '12:00', '14:00', '16:00', '18:00'],
+  datasets: [{
+    label: 'Pacientes por horario',
+    data: [32, 45, 38, 42, 35, 28],
+    borderColor: '#47472e',
+    backgroundColor: '#ffe0a6',
+    tension: 0.3,
+    fill: true
+  }]
+};
+```
+
+## Component Props
+
+<ParamField path="establecimientoId" type="string" required>
+  Unique identifier for the healthcare facility
+</ParamField>
+
+<ParamField path="place" type="object" required>
+  OpenStreetMap place object containing facility details and tags
+</ParamField>
+
+## File Reference
+
+<Card title="Analytics Component" icon="code" href="#">
+  `Frontend/src/components/Analytics/Analytics.jsx`
+</Card>
+
+<Note>
+  The Analytics component automatically generates sample data for demonstration. In production, connect to your backend API to fetch real statistics.
+</Note>

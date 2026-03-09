@@ -1,0 +1,436 @@
+---
+title: 'Insurance Plans (Seguros)'
+description: 'Contract health insurance plans with PDF generation and email confirmation'
+icon: 'shield-heart'
+---
+
+## Overview
+
+SaludMap offers three comprehensive health insurance plans that users can contract directly through the platform. The system includes plan selection, secure checkout, PDF contract generation, and email confirmation.
+
+<Warning>
+  **Authentication Required**: Users must be logged in to contract insurance plans. Unauthenticated users will be prompted to log in or register.
+</Warning>
+
+## Available Insurance Plans
+
+SaludMap offers three insurance tiers to meet different coverage needs:
+
+<CardGroup cols={3}>
+  <Card title="Plan Básico" icon="1">
+    **$150/month**
+    
+    Essential medical coverage for consultations and basic emergencies.
+    
+    - General medical consultations
+    - Basic emergencies
+    - Basic medications
+    - Basic laboratory tests
+  </Card>
+  
+  <Card title="Plan Premium" icon="2">
+    **$300/month**
+    
+    Complete medical coverage with specialists and advanced procedures.
+    
+    - General and specialist consultations
+    - Emergencies & hospitalization
+    - Specialized medications
+    - Complete laboratory tests
+    - Minor & major surgeries
+    - Rehabilitation & physiotherapy
+  </Card>
+  
+  <Card title="Plan Familiar" icon="3">
+    **$500/month**
+    
+    Complete family coverage for up to 4 members.
+    
+    - Coverage for 4 family members
+    - General & specialist consultations
+    - Emergencies & hospitalization
+    - Specialized medications
+    - Complete laboratory tests
+    - Surgeries & rehabilitation
+    - Specialized pediatric care
+    - Geriatric care
+  </Card>
+</CardGroup>
+
+### Plan Configuration
+
+Plans are defined in a structured TypeScript file:
+
+```typescript Insurance Plans (insurancePlans.ts)
+export const insurancePlans: InsurancePlan[] = [
+  {
+    id: 'basic',
+    name: 'Plan Básico',
+    price: 150,
+    description: 'Cobertura médica esencial para consultas y emergencias básicas',
+    coverage: [
+      'Consultas médicas generales',
+      'Emergencias básicas',
+      'Medicamentos básicos',
+      'Análisis de laboratorio básicos'
+    ]
+  },
+  {
+    id: 'premium',
+    name: 'Plan Premium',
+    price: 300,
+    description: 'Cobertura médica completa con especialistas y procedimientos avanzados',
+    coverage: [
+      'Consultas médicas generales y especialistas',
+      'Emergencias y hospitalización',
+      'Medicamentos y tratamientos especializados',
+      'Análisis de laboratorio completos',
+      'Cirugías menores y mayores',
+      'Rehabilitación y fisioterapia'
+    ]
+  },
+  {
+    id: 'family',
+    name: 'Plan Familiar',
+    price: 500,
+    description: 'Cobertura médica completa para toda la familia',
+    coverage: [
+      'Cobertura para hasta 4 miembros de la familia',
+      'Consultas médicas generales y especialistas',
+      'Emergencias y hospitalización',
+      'Medicamentos y tratamientos especializados',
+      'Análisis de laboratorio completos',
+      'Cirugías menores y mayores',
+      'Rehabilitación y fisioterapia',
+      'Atención pediátrica especializada',
+      'Atención geriátrica'
+    ]
+  }
+];
+```
+
+## Checkout Process
+
+### User Flow
+
+<Steps>
+  <Step title="Select a Plan">
+    Browse the three available plans and click on the desired insurance option
+  </Step>
+  <Step title="Authentication Check">
+    If not logged in, the system will prompt for authentication
+  </Step>
+  <Step title="Fill User Information">
+    Complete the checkout form with personal details (name, email, phone, address)
+  </Step>
+  <Step title="Submit & Process">
+    Submit the form to generate PDF contract and receive email confirmation
+  </Step>
+  <Step title="Download & Confirm">
+    PDF insurance card downloads automatically and confirmation email is sent
+  </Step>
+</Steps>
+
+### Authentication Flow
+
+The system verifies user authentication before allowing plan contracting:
+
+```jsx Authentication Check (InsuranceSection.jsx:26-37)
+const handleContractPlan = () => {
+  if (!user) {
+    // If not authenticated, show login modal
+    setShowRegister(false);
+    setShowAuthModal(true);
+    return;
+  }
+  // If authenticated, proceed with contracting
+  if (selectedPlan) {
+    setIsCheckoutOpen(true);
+  }
+};
+```
+
+### Auto-Fill User Data
+
+For authenticated users, the checkout form automatically pre-fills with account information:
+
+```tsx Auto-Complete (CheckoutModal.tsx:39-48)
+useEffect(() => {
+  if (isOpen && user) {
+    const fullName = [(user.nombre ?? ''), (user.apellido ?? '')].filter(Boolean).join(' ');
+    setUserInfo(prev => ({
+      ...prev,
+      name:  prev.name  || fullName,
+      email: prev.email || (user.mail ?? ''),
+    }));
+  }
+}, [isOpen, user]);
+```
+
+## PDF Generation
+
+### Insurance Card PDF
+
+The system generates a professional insurance card PDF using **jsPDF**:
+
+```typescript PDF Generator (PDFGenerator.ts:20-52)
+export class PDFGenerator {
+  static generateInsuranceCard(plan: InsurancePlan, userInfo: UserInfo): void {
+    const doc = new jsPDF();
+
+    // Header
+    doc.setFontSize(20);
+    doc.text('Tarjeta de Seguro Médico', 20, 30);
+
+    // Plan information
+    doc.setFontSize(16);
+    doc.text(`Plan: ${plan.name}`, 20, 50);
+    doc.setFontSize(12);
+    doc.text(`Precio: $${plan.price}/mes`, 20, 65);
+
+    // User information
+    doc.setFontSize(14);
+    doc.text('Información del Asegurado:', 20, 85);
+    doc.setFontSize(12);
+    doc.text(`Nombre: ${userInfo.name}`, 20, 100);
+    doc.text(`Email: ${userInfo.email}`, 20, 115);
+    doc.text(`Teléfono: ${userInfo.phone}`, 20, 130);
+    doc.text(`Dirección: ${userInfo.address}`, 20, 145);
+
+    // Coverage
+    doc.setFontSize(14);
+    doc.text('Cobertura:', 20, 165);
+    doc.setFontSize(12);
+    plan.coverage.forEach((item, index) => {
+      doc.text(`• ${item}`, 25, 180 + (index * 15));
+    });
+
+    // Save the PDF
+    doc.save(`seguro-${plan.name.toLowerCase().replace(/\s+/g, '-')}.pdf`);
+  }
+}
+```
+
+### PDF Contents
+
+The generated PDF includes:
+
+<AccordionGroup>
+  <Accordion title="Header Section" icon="heading">
+    - Document title: "Tarjeta de Seguro Médico"
+    - Professional formatting with custom fonts
+  </Accordion>
+  
+  <Accordion title="Plan Information" icon="file-medical">
+    - Plan name (Básico, Premium, or Familiar)
+    - Monthly price
+    - Plan description
+  </Accordion>
+  
+  <Accordion title="Insured Information" icon="user">
+    - Full name
+    - Email address
+    - Phone number
+    - Physical address
+  </Accordion>
+  
+  <Accordion title="Coverage Details" icon="list-check">
+    - Bulleted list of all covered services
+    - Specific to the selected plan
+  </Accordion>
+</AccordionGroup>
+
+## Email Confirmation
+
+### Confirmation Email Service
+
+After successful checkout, the system sends a confirmation email using EmailJS:
+
+```tsx Email Processing (CheckoutModal.tsx:72-109)
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setIsProcessing(true);
+
+  try {
+    initializeEmailJS();
+
+    // Generate and download PDF
+    const pdfDownloaded = downloadInsurancePDF(plan, userInfo);
+    if (!pdfDownloaded) {
+      throw new Error('Error generando el PDF de la tarjeta de seguro');
+    }
+
+    // Send confirmation email
+    const emailResult = await sendInsuranceConfirmationEmail(plan, userInfo);
+
+    if (emailResult.success) {
+      setEmailSent(true);
+      toast.success(
+        `¡Seguro contratado! Confirmación enviada a ${userInfo.email}. Póliza: ${emailResult.orderId}`
+      );
+    } else {
+      toast.info('¡Seguro contratado! Se descargó tu tarjeta. El correo de confirmación no pudo enviarse, pero tu seguro está activo.');
+    }
+
+    onClose();
+  } catch (error) {
+    toast.error(`Error al procesar el seguro: ${error.message}`);
+  } finally {
+    setIsProcessing(false);
+  }
+};
+```
+
+<Info>
+  The system provides graceful degradation: if email delivery fails, the PDF still downloads and the insurance is considered active. Users receive a notification about the email failure.
+</Info>
+
+## Component Architecture
+
+### Main Components
+
+<CodeGroup>
+```jsx InsuranceSection Component
+import InsuranceCard from './InsuranceCard';
+import CheckoutModal from './CheckoutModal';
+import { insurancePlans } from './insurancePlans';
+import { useAuth } from '../Auth/AuthContext.jsx';
+
+const InsuranceSection = () => {
+  const { user } = useAuth();
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+
+  return (
+    <div className="insurance-section">
+      <div className="insurance-cards-grid">
+        {insurancePlans.map((plan) => (
+          <InsuranceCard
+            key={plan.id}
+            plan={plan}
+            onSelect={handleSelectPlan}
+            isSelected={selectedPlan?.id === plan.id}
+          />
+        ))}
+      </div>
+      <CheckoutModal
+        plan={selectedPlan}
+        isOpen={isCheckoutOpen}
+        onClose={handleCloseCheckout}
+      />
+    </div>
+  );
+};
+```
+</CodeGroup>
+
+### TypeScript Interfaces
+
+```typescript Type Definitions (PDFGenerator.ts)
+export interface InsurancePlan {
+  id: string;
+  name: string;
+  price: number;
+  coverage: string[];
+  description: string;
+}
+
+export interface UserInfo {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+}
+```
+
+## Dependencies
+
+<CodeGroup>
+```json Required Packages
+{
+  "dependencies": {
+    "jspdf": "^2.5.x",
+    "react-i18next": "^13.x.x",
+    "sonner": "^1.x.x"
+  }
+}
+```
+</CodeGroup>
+
+## Usage Example
+
+### Integrating Insurance Section
+
+```jsx App Integration
+import InsuranceSection from './components/CardsSegure/InsuranceSection';
+
+function App() {
+  return (
+    <div className="app">
+      <Navigation />
+      <InsuranceSection />
+      <Footer />
+    </div>
+  );
+}
+```
+
+## Form Validation
+
+All checkout form fields are required:
+
+<ParamField path="name" type="string" required>
+  Full name of the insured person
+</ParamField>
+
+<ParamField path="email" type="email" required>
+  Valid email address for confirmation
+</ParamField>
+
+<ParamField path="phone" type="tel" required>
+  Contact phone number
+</ParamField>
+
+<ParamField path="address" type="string" required>
+  Physical address (multiline textarea)
+</ParamField>
+
+## File References
+
+<CardGroup cols={2}>
+  <Card title="Insurance Section" icon="code" href="#">
+    `Frontend/src/components/CardsSegure/InsuranceSection.jsx`
+  </Card>
+  <Card title="Checkout Modal" icon="code" href="#">
+    `Frontend/src/components/CardsSegure/CheckoutModal.tsx`
+  </Card>
+  <Card title="Insurance Plans" icon="code" href="#">
+    `Frontend/src/components/CardsSegure/insurancePlans.ts`
+  </Card>
+  <Card title="PDF Generator" icon="code" href="#">
+    `Frontend/src/components/CardsSegure/PDFGenerator.ts`
+  </Card>
+</CardGroup>
+
+## Error Handling
+
+The system includes comprehensive error handling:
+
+<Steps>
+  <Step title="PDF Generation Failure">
+    Throws error and displays toast notification
+  </Step>
+  <Step title="Email Delivery Failure">
+    Insurance is still considered active, user receives info notification
+  </Step>
+  <Step title="Form Validation">
+    HTML5 validation prevents submission with missing fields
+  </Step>
+  <Step title="Authentication Required">
+    Redirects to login modal if user is not authenticated
+  </Step>
+</Steps>
+
+<Tip>
+  The insurance system gracefully handles partial failures. Even if the email confirmation fails, users still receive their insurance card PDF and the plan is activated.
+</Tip>

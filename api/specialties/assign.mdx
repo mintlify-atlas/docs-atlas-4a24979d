@@ -1,0 +1,181 @@
+---
+title: 'Assign Specialty to Establishment'
+api: 'POST /especialidades/asignar'
+auth: 'bearer'
+---
+
+Assigns a medical specialty to a healthcare establishment, optionally including available schedules. This endpoint requires admin authentication.
+
+## Authentication
+
+This endpoint requires a valid JWT token with admin role.
+
+```bash
+Authorization: Bearer <token>
+```
+
+## Request Body
+
+<ParamField body="establecimientoId" type="number" required>
+  The unique identifier of the establishment
+</ParamField>
+
+<ParamField body="especialidadId" type="number" required>
+  The unique identifier of the specialty to assign
+</ParamField>
+
+<ParamField body="horariosDisponibles" type="string">
+  Available schedules for this specialty at the establishment (optional)
+</ParamField>
+
+## Response
+
+<ResponseField name="establecimientoId" type="number">
+  The unique identifier of the establishment
+</ResponseField>
+
+<ResponseField name="especialidadId" type="number">
+  The unique identifier of the specialty
+</ResponseField>
+
+<ResponseField name="horariosDisponibles" type="string">
+  Available schedules for this specialty at the establishment
+</ResponseField>
+
+<ResponseField name="especialidad" type="object">
+  The full specialty object
+  
+  <ResponseField name="id" type="number">
+    The unique identifier for the specialty
+  </ResponseField>
+  
+  <ResponseField name="nombre" type="string">
+    The name of the medical specialty
+  </ResponseField>
+  
+  <ResponseField name="descripcion" type="string">
+    A description of the specialty
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="establecimiento" type="object">
+  The full establishment object
+  
+  <ResponseField name="id" type="number">
+    The unique identifier for the establishment
+  </ResponseField>
+  
+  <ResponseField name="nombre" type="string">
+    The name of the establishment
+  </ResponseField>
+  
+  <ResponseField name="direccion" type="string">
+    The address of the establishment
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X POST https://api.example.com/especialidades/asignar \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "establecimientoId": 5,
+    "especialidadId": 1,
+    "horariosDisponibles": "Lunes a Viernes 8:00-17:00"
+  }'
+```
+
+## Example Response
+
+```json
+{
+  "establecimientoId": 5,
+  "especialidadId": 1,
+  "horariosDisponibles": "Lunes a Viernes 8:00-17:00",
+  "especialidad": {
+    "id": 1,
+    "nombre": "Cardiología",
+    "descripcion": "Especialidad médica que se ocupa de las enfermedades del corazón y del aparato circulatorio",
+    "createdAt": "2026-01-15T10:00:00.000Z"
+  },
+  "establecimiento": {
+    "id": 5,
+    "nombre": "Hospital Central",
+    "direccion": "Av. Principal 123",
+    "telefono": "+56912345678",
+    "email": "contacto@hospitalcentral.cl"
+  }
+}
+```
+
+## Error Responses
+
+<ResponseField name="404 Not Found">
+  Returned when either the establishment or specialty does not exist
+  
+  ```json
+  {
+    "statusCode": 404,
+    "message": "Establecimiento con ID 999 no encontrado",
+    "error": "Not Found"
+  }
+  ```
+  
+  ```json
+  {
+    "statusCode": 404,
+    "message": "Especialidad con ID 999 no encontrada",
+    "error": "Not Found"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="409 Conflict">
+  Returned when the specialty is already assigned to the establishment
+  
+  ```json
+  {
+    "statusCode": 409,
+    "message": "Esta especialidad ya está asignada a ese establecimiento",
+    "error": "Conflict"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="401 Unauthorized">
+  Returned when the request lacks valid authentication
+  
+  ```json
+  {
+    "statusCode": 401,
+    "message": "Unauthorized"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="403 Forbidden">
+  Returned when the authenticated user does not have admin role
+  
+  ```json
+  {
+    "statusCode": 403,
+    "message": "Forbidden resource",
+    "error": "Forbidden"
+  }
+  ```
+</ResponseField>
+
+## Use Cases
+
+- Add new specialties to an establishment's service offerings
+- Configure available schedules for specific specialties
+- Expand an establishment's medical services
+- Update establishment capabilities after hiring specialists
+
+## Related Endpoints
+
+- [Get Specialties by Establishment](/api/specialties/by-establishment) - View specialties at an establishment
+- [Remove Specialty](/api/specialties/remove) - Remove a specialty from an establishment
+- [List Specialties](/api/specialties/list) - Get all available specialties

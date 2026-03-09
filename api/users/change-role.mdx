@@ -1,0 +1,115 @@
+---
+title: "Change User Role"
+api: "POST /usuarios/cambiar-rol"
+---
+
+Change the role of an existing user. This endpoint is restricted to administrators only.
+
+## Authentication
+
+This endpoint requires JWT authentication and admin role privileges.
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for authentication. Must belong to a user with admin role.
+</ParamField>
+
+## Request Body
+
+<ParamField body="mail" type="string" required>
+  Email address of the user whose role will be changed
+</ParamField>
+
+<ParamField body="rol" type="string" required>
+  New role to assign to the user (e.g., 'admin', 'user')
+</ParamField>
+
+## Response
+
+Returns the updated user object.
+
+<ResponseField name="id" type="string">
+  Unique identifier for the user
+</ResponseField>
+
+<ResponseField name="nombre" type="string">
+  User's first name
+</ResponseField>
+
+<ResponseField name="apellido" type="string">
+  User's last name
+</ResponseField>
+
+<ResponseField name="mail" type="string">
+  User's email address
+</ResponseField>
+
+<ResponseField name="rol" type="string">
+  User's updated role in the system
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X POST https://api.example.com/usuarios/cambiar-rol \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mail": "juan.perez@example.com",
+    "rol": "admin"
+  }'
+```
+
+## Example Response
+
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "nombre": "Juan",
+  "apellido": "Pérez",
+  "mail": "juan.perez@example.com",
+  "rol": "admin"
+}
+```
+
+## Error Responses
+
+<ResponseField name="statusCode" type="number">
+  HTTP status code
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Error message description
+</ResponseField>
+
+### 401 Unauthorized
+
+Returned when the JWT token is missing or invalid.
+
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized"
+}
+```
+
+### 403 Forbidden
+
+Returned when the authenticated user does not have admin privileges.
+
+```json
+{
+  "statusCode": 403,
+  "message": "Forbidden resource"
+}
+```
+
+### 404 Not Found
+
+Returned when the specified user email does not exist.
+
+```json
+{
+  "statusCode": 404,
+  "message": "User not found"
+}
+```

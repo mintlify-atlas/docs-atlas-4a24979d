@@ -1,0 +1,92 @@
+---
+title: 'Get Specialties by Establishment'
+api: 'GET /especialidades/establecimiento/:id'
+---
+
+Retrieves all medical specialties offered at a specific healthcare establishment, including their available schedules. This is a public endpoint that does not require authentication.
+
+## Path Parameters
+
+<ParamField path="id" type="number" required>
+  The unique identifier of the establishment
+</ParamField>
+
+## Response
+
+<ResponseField name="specialties" type="array">
+  Array of specialty objects with establishment-specific information
+  
+  <ResponseField name="id" type="number">
+    The unique identifier for the specialty
+  </ResponseField>
+  
+  <ResponseField name="nombre" type="string">
+    The name of the medical specialty
+  </ResponseField>
+  
+  <ResponseField name="descripcion" type="string">
+    A description of the specialty (optional)
+  </ResponseField>
+  
+  <ResponseField name="horariosDisponibles" type="string">
+    Available schedules for this specialty at the establishment (optional)
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X GET https://api.example.com/especialidades/establecimiento/5
+```
+
+## Example Response
+
+```json
+[
+  {
+    "id": 1,
+    "nombre": "Cardiología",
+    "descripcion": "Especialidad médica que se ocupa de las enfermedades del corazón y del aparato circulatorio",
+    "horariosDisponibles": "Lunes a Viernes 8:00-17:00"
+  },
+  {
+    "id": 3,
+    "nombre": "Pediatría",
+    "descripcion": "Especialidad médica que se ocupa de la salud y las enfermedades de los niños",
+    "horariosDisponibles": "Lunes, Miércoles, Viernes 9:00-13:00"
+  },
+  {
+    "id": 5,
+    "nombre": "Oftalmología",
+    "descripcion": "Especialidad médica que estudia las enfermedades de los ojos",
+    "horariosDisponibles": null
+  }
+]
+```
+
+## Error Responses
+
+<ResponseField name="404 Not Found">
+  Returned when the establishment with the specified ID does not exist
+  
+  ```json
+  {
+    "statusCode": 404,
+    "message": "Establecimiento con ID 999 no encontrado",
+    "error": "Not Found"
+  }
+  ```
+</ResponseField>
+
+## Use Cases
+
+- Display available specialties when users browse an establishment
+- Show specialty-specific schedules for appointment booking
+- Filter available appointment slots by specialty
+- Build establishment profile pages with specialty information
+
+## Related Endpoints
+
+- [List Specialties](/api/specialties/list) - Get all specialties
+- [Assign Specialty](/api/specialties/assign) - Assign a specialty to an establishment (admin only)
+- [Remove Specialty](/api/specialties/remove) - Remove a specialty from an establishment (admin only)

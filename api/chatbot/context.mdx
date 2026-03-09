@@ -1,0 +1,63 @@
+---
+title: "Get Chatbot Context"
+api: "GET /chatbot/context"
+---
+
+Retrieve contextual information about the SaludMap project, including available features and descriptions. This endpoint provides the chatbot with project-specific context.
+
+## Response
+
+<ResponseField name="success" type="boolean">
+  Always returns true
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Container for the context data
+  
+  <ResponseField name="projectName" type="string">
+    Name of the project (SaludMap)
+  </ResponseField>
+  
+  <ResponseField name="description" type="string">
+    Brief description of the project
+  </ResponseField>
+  
+  <ResponseField name="availableFeatures" type="array">
+    List of available features in the system
+    
+    - Mapa Interactivo
+    - Reserva de Turnos
+    - Modo Offline
+    - Soporte Multilingüe
+    - Integración con Seguros
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X GET https://api.example.com/chatbot/context
+```
+
+## Example Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "projectName": "SaludMap",
+    "description": "Tu Guía Sanitaria y Veterinaria",
+    "availableFeatures": [
+      "Mapa Interactivo",
+      "Reserva de Turnos",
+      "Modo Offline",
+      "Soporte Multilingüe",
+      "Integración con Seguros"
+    ]
+  }
+}
+```
+
+## Notes
+
+This endpoint does not require authentication and provides static contextual information about the SaludMap project to help the chatbot understand the system's capabilities.

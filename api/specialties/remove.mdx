@@ -1,0 +1,113 @@
+---
+title: 'Remove Specialty from Establishment'
+api: 'DELETE /especialidades/establecimiento/:establecimientoId/:especialidadId'
+auth: 'bearer'
+---
+
+Removes a medical specialty from a healthcare establishment. This endpoint requires admin authentication.
+
+## Authentication
+
+This endpoint requires a valid JWT token with admin role.
+
+```bash
+Authorization: Bearer <token>
+```
+
+## Path Parameters
+
+<ParamField path="establecimientoId" type="number" required>
+  The unique identifier of the establishment
+</ParamField>
+
+<ParamField path="especialidadId" type="number" required>
+  The unique identifier of the specialty to remove
+</ParamField>
+
+## Response
+
+<ResponseField name="establecimientoId" type="number">
+  The unique identifier of the establishment
+</ResponseField>
+
+<ResponseField name="especialidadId" type="number">
+  The unique identifier of the specialty that was removed
+</ResponseField>
+
+<ResponseField name="horariosDisponibles" type="string">
+  The schedules that were configured (returned for reference)
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X DELETE https://api.example.com/especialidades/establecimiento/5/1 \
+  -H "Authorization: Bearer <token>"
+```
+
+## Example Response
+
+```json
+{
+  "establecimientoId": 5,
+  "especialidadId": 1,
+  "horariosDisponibles": "Lunes a Viernes 8:00-17:00"
+}
+```
+
+## Error Responses
+
+<ResponseField name="404 Not Found">
+  Returned when the specialty is not assigned to the establishment
+  
+  ```json
+  {
+    "statusCode": 404,
+    "message": "Esta especialidad no está asignada a ese establecimiento",
+    "error": "Not Found"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="401 Unauthorized">
+  Returned when the request lacks valid authentication
+  
+  ```json
+  {
+    "statusCode": 401,
+    "message": "Unauthorized"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="403 Forbidden">
+  Returned when the authenticated user does not have admin role
+  
+  ```json
+  {
+    "statusCode": 403,
+    "message": "Forbidden resource",
+    "error": "Forbidden"
+  }
+  ```
+</ResponseField>
+
+## Use Cases
+
+- Remove specialties that are no longer offered at an establishment
+- Update establishment services when specialists leave
+- Clean up incorrect specialty assignments
+- Manage establishment service offerings
+
+## Important Notes
+
+- This operation only removes the specialty assignment, not the specialty itself
+- The specialty remains available in the system and can be reassigned later
+- Ensure there are no active appointments for this specialty before removal
+- Consider the impact on existing patient bookings
+
+## Related Endpoints
+
+- [Assign Specialty](/api/specialties/assign) - Assign a specialty to an establishment
+- [Get Specialties by Establishment](/api/specialties/by-establishment) - View specialties at an establishment
+- [List Specialties](/api/specialties/list) - Get all available specialties

@@ -1,0 +1,177 @@
+---
+title: 'Get Eligible Appointments for Review'
+api: 'GET /resenias/turnos-para-reseniar'
+---
+
+Retrieves all appointments that are eligible for the authenticated user to leave a review. An appointment is eligible if it has occurred (or is within the last 2 hours for testing), has not been cancelled, and does not already have a review.
+
+<Note>
+  This endpoint requires authentication. Include a valid JWT token in the Authorization header.
+</Note>
+
+## Query Parameters
+
+<ParamField query="establecimientoId" type="number" optional>
+  Filter eligible appointments by a specific healthcare establishment
+</ParamField>
+
+## Authentication
+
+Requires a valid JWT token in the Authorization header:
+
+```
+Authorization: Bearer <your-jwt-token>
+```
+
+The user ID is automatically extracted from the JWT token.
+
+## Response
+
+<ResponseField name="appointments" type="array">
+  Array of appointment objects eligible for review
+  
+  <ResponseField name="id" type="number">
+    The unique identifier for the appointment
+  </ResponseField>
+  
+  <ResponseField name="usuarioId" type="number">
+    The ID of the user (matches the authenticated user)
+  </ResponseField>
+  
+  <ResponseField name="establecimientoId" type="number">
+    The ID of the healthcare establishment
+  </ResponseField>
+  
+  <ResponseField name="especialidadId" type="number">
+    The ID of the medical specialty
+  </ResponseField>
+  
+  <ResponseField name="fecha" type="string">
+    Appointment date (ISO 8601 format)
+  </ResponseField>
+  
+  <ResponseField name="hora" type="string">
+    Appointment time (HH:MM format)
+  </ResponseField>
+  
+  <ResponseField name="estado" type="string">
+    Appointment status (e.g., "pendiente", "completado")
+  </ResponseField>
+  
+  <ResponseField name="establecimiento" type="object">
+    Information about the healthcare establishment
+    
+    <ResponseField name="id" type="number">
+      Establishment ID
+    </ResponseField>
+    
+    <ResponseField name="nombre" type="string">
+      Establishment name
+    </ResponseField>
+    
+    <ResponseField name="direccion" type="string">
+      Street address
+    </ResponseField>
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X GET https://api.example.com/resenias/turnos-para-reseniar \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+### With Establishment Filter
+
+```bash
+curl -X GET "https://api.example.com/resenias/turnos-para-reseniar?establecimientoId=45" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+## Example Response
+
+```json
+[
+  {
+    "id": 1001,
+    "usuarioId": 123,
+    "establecimientoId": 45,
+    "especialidadId": 3,
+    "fecha": "2026-03-08T00:00:00.000Z",
+    "hora": "14:30",
+    "estado": "completado",
+    "establecimiento": {
+      "id": 45,
+      "nombre": "Centro Médico San Rafael",
+      "direccion": "Av. Corrientes 1234, Buenos Aires"
+    }
+  },
+  {
+    "id": 995,
+    "usuarioId": 123,
+    "establecimientoId": 52,
+    "especialidadId": 7,
+    "fecha": "2026-03-05T00:00:00.000Z",
+    "hora": "10:00",
+    "estado": "completado",
+    "establecimiento": {
+      "id": 52,
+      "nombre": "Hospital General",
+      "direccion": "Calle San Martín 890, Buenos Aires"
+    }
+  }
+]
+```
+
+## Error Responses
+
+### Unauthorized
+
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized",
+  "error": "Unauthorized"
+}
+```
+
+### Invalid Token
+
+```json
+{
+  "statusCode": 401,
+  "message": "Invalid or expired token",
+  "error": "Unauthorized"
+}
+```
+
+### Invalid Establishment ID
+
+```json
+{
+  "statusCode": 400,
+  "message": "Invalid establecimientoId format",
+  "error": "Bad Request"
+}
+```
+
+## Eligibility Criteria
+
+An appointment is eligible for review if:
+
+1. It belongs to the authenticated user
+2. The appointment date/time has passed (or is within the last 2 hours)
+3. The appointment status is not "cancelled"
+4. No review has been created for this appointment yet
+
+<Tip>
+  The 2-hour grace period allows users to review appointments immediately after completion for testing purposes.
+</Tip>
+
+## Use Cases
+
+- Display a list of reviewable appointments to the user
+- Prompt users to leave reviews after their appointments
+- Filter appointments by establishment when needed
+- Build a review submission flow in your application

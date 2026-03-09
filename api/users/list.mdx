@@ -1,0 +1,98 @@
+---
+title: "List All Users"
+api: "GET /usuarios"
+---
+
+Retrieve a list of all registered users in the system. This endpoint is restricted to administrators only.
+
+## Authentication
+
+This endpoint requires JWT authentication and admin role privileges.
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for authentication. Must belong to a user with admin role.
+</ParamField>
+
+## Response
+
+Returns an array of user objects.
+
+<ResponseField name="id" type="string">
+  Unique identifier for the user
+</ResponseField>
+
+<ResponseField name="nombre" type="string">
+  User's first name
+</ResponseField>
+
+<ResponseField name="apellido" type="string">
+  User's last name
+</ResponseField>
+
+<ResponseField name="mail" type="string">
+  User's email address
+</ResponseField>
+
+<ResponseField name="rol" type="string">
+  User's role in the system (e.g., 'admin', 'user')
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X GET https://api.example.com/usuarios \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+## Example Response
+
+```json
+[
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "nombre": "Juan",
+    "apellido": "Pérez",
+    "mail": "juan.perez@example.com",
+    "rol": "user"
+  },
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174001",
+    "nombre": "María",
+    "apellido": "García",
+    "mail": "maria.garcia@example.com",
+    "rol": "admin"
+  }
+]
+```
+
+## Error Responses
+
+<ResponseField name="statusCode" type="number">
+  HTTP status code
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Error message description
+</ResponseField>
+
+### 401 Unauthorized
+
+Returned when the JWT token is missing or invalid.
+
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized"
+}
+```
+
+### 403 Forbidden
+
+Returned when the authenticated user does not have admin privileges.
+
+```json
+{
+  "statusCode": 403,
+  "message": "Forbidden resource"
+}
+```

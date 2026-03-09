@@ -1,0 +1,203 @@
+---
+title: 'Get Establishment Reviews'
+api: 'GET /establecimientos/:id/resenias'
+description: 'Retrieve all reviews for an establishment along with calculated statistics'
+---
+
+## Overview
+
+Fetch all reviews for a specific establishment with aggregated statistics including total count and average star rating. This endpoint is optimized for displaying review lists with summary metrics.
+
+## Path Parameters
+
+<ParamField path="id" type="number" required>
+  Unique identifier of the establishment.
+  
+  **Example:** `42`
+</ParamField>
+
+## Response
+
+<ResponseField name="resenias" type="array">
+  Array of review objects ordered by creation date (most recent first):
+  
+  <ResponseField name="id" type="number">
+    Review unique identifier
+  </ResponseField>
+  
+  <ResponseField name="puntuacion" type="number">
+    Rating score (typically 1-5 stars)
+  </ResponseField>
+  
+  <ResponseField name="comentario" type="string">
+    Review text/comment
+  </ResponseField>
+  
+  <ResponseField name="establecimientoId" type="number">
+    ID of the reviewed establishment
+  </ResponseField>
+  
+  <ResponseField name="usuarioId" type="number">
+    ID of the user who wrote the review
+  </ResponseField>
+  
+  <ResponseField name="createdAt" type="string">
+    ISO 8601 timestamp when the review was written
+  </ResponseField>
+  
+  <ResponseField name="updatedAt" type="string">
+    ISO 8601 timestamp when the review was last modified
+  </ResponseField>
+  
+  <ResponseField name="usuario" type="object">
+    Information about the reviewer:
+    
+    <ResponseField name="id" type="number">
+      User ID
+    </ResponseField>
+    
+    <ResponseField name="nombre" type="string">
+      User first name
+    </ResponseField>
+    
+    <ResponseField name="apellido" type="string">
+      User last name
+    </ResponseField>
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="estadisticas" type="object">
+  Aggregated review statistics:
+  
+  <ResponseField name="total" type="number">
+    Total number of reviews
+  </ResponseField>
+  
+  <ResponseField name="promedioEstrellas" type="number">
+    Average star rating across all reviews, rounded to 1 decimal place.
+    
+    **Range:** 0.0 - 5.0 (0 if no reviews exist)
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X GET "https://api.saludmap.com/establecimientos/42/resenias"
+```
+
+## Example Response
+
+```json
+{
+  "resenias": [
+    {
+      "id": 205,
+      "puntuacion": 5,
+      "comentario": "Excelente clínica, muy moderna y limpia. El personal es muy atento.",
+      "establecimientoId": 42,
+      "usuarioId": 78,
+      "createdAt": "2024-03-07T16:45:00.000Z",
+      "updatedAt": "2024-03-07T16:45:00.000Z",
+      "usuario": {
+        "id": 78,
+        "nombre": "Laura",
+        "apellido": "Fernández"
+      }
+    },
+    {
+      "id": 198,
+      "puntuacion": 4,
+      "comentario": "Buena atención, aunque a veces hay que esperar un poco.",
+      "establecimientoId": 42,
+      "usuarioId": 65,
+      "createdAt": "2024-03-01T10:20:00.000Z",
+      "updatedAt": "2024-03-01T10:20:00.000Z",
+      "usuario": {
+        "id": 65,
+        "nombre": "Roberto",
+        "apellido": "Martínez"
+      }
+    },
+    {
+      "id": 187,
+      "puntuacion": 5,
+      "comentario": "Muy recomendable. Atención rápida y profesional.",
+      "establecimientoId": 42,
+      "usuarioId": 52,
+      "createdAt": "2024-02-22T14:30:00.000Z",
+      "updatedAt": "2024-02-22T14:30:00.000Z",
+      "usuario": {
+        "id": 52,
+        "nombre": "María",
+        "apellido": "González"
+      }
+    }
+  ],
+  "estadisticas": {
+    "total": 3,
+    "promedioEstrellas": 4.7
+  }
+}
+```
+
+## Example Response (No Reviews)
+
+```json
+{
+  "resenias": [],
+  "estadisticas": {
+    "total": 0,
+    "promedioEstrellas": 0
+  }
+}
+```
+
+## Error Responses
+
+### 400 Bad Request
+
+Returned when the ID parameter is not a valid integer:
+
+```json
+{
+  "statusCode": 400,
+  "message": "Validation failed (numeric string is expected)",
+  "error": "Bad Request"
+}
+```
+
+### 404 Not Found
+
+Returned when no establishment exists with the specified ID:
+
+```json
+{
+  "statusCode": 404,
+  "message": "Establecimiento no encontrado",
+  "error": "Not Found"
+}
+```
+
+## Use Cases
+
+- **Reviews Display**: Show all reviews with summary statistics on an establishment page
+- **Rating Widget**: Display average rating and review count in a summary card
+- **Social Proof**: Show user testimonials with reviewer names
+- **Review Analysis**: Analyze review patterns and user feedback
+- **Quality Metrics**: Track establishment reputation through aggregated ratings
+
+## Related Endpoints
+
+- `GET /establecimientos/:id` - Get establishment details (includes reviews but without statistics)
+- `POST /resenias` - Create a new review for an establishment
+- `GET /resenias/:id` - Get details of a specific review
+
+## Notes
+
+- Reviews are ordered by creation date (most recent first)
+- User information is limited to id, nombre, and apellido for privacy
+- The average rating is calculated server-side for consistency
+- If no reviews exist, the array is empty and promedioEstrellas is 0
+- This endpoint first validates that the establishment exists (throws 404 if not)
+- Statistics are computed in real-time from the review data

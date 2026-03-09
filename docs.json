@@ -39,7 +39,9 @@
               "features/reviews",
               "features/offline-mode",
               "features/chatbot",
-              "features/emergency"
+              "features/emergency",
+              "features/analytics",
+              "features/insurance"
             ]
           },
           {
@@ -86,7 +88,10 @@
               "api/establishments/list",
               "api/establishments/create",
               "api/establishments/get-by-coords",
-              "api/establishments/get-by-id"
+              "api/establishments/get-by-id",
+              "api/establishments/by-specialty",
+              "api/establishments/reviews",
+              "api/establishments/specialties"
             ]
           },
           {
@@ -103,27 +108,38 @@
             "pages": [
               "api/reviews/create",
               "api/reviews/list",
-              "api/reviews/get-by-establishment"
+              "api/reviews/get-by-establishment",
+              "api/reviews/get-by-id",
+              "api/reviews/eligible-appointments",
+              "api/reviews/validate"
             ]
           },
           {
             "group": "Specialties",
             "pages": [
               "api/specialties/list",
-              "api/specialties/create"
+              "api/specialties/create",
+              "api/specialties/get-by-id",
+              "api/specialties/by-establishment",
+              "api/specialties/assign",
+              "api/specialties/remove"
             ]
           },
           {
             "group": "Users",
             "pages": [
               "api/users/profile",
-              "api/users/update"
+              "api/users/list",
+              "api/users/change-role"
             ]
           },
           {
             "group": "Chatbot",
             "pages": [
-              "api/chatbot/chat"
+              "api/chatbot/chat",
+              "api/chatbot/feature",
+              "api/chatbot/health",
+              "api/chatbot/context"
             ]
           }
         ]

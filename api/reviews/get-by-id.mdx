@@ -1,0 +1,194 @@
+---
+title: 'Get Review by ID'
+api: 'GET /resenias/:id'
+---
+
+Retrieves a specific review by its unique identifier. This endpoint includes detailed information about the review, the user who created it, the establishment, and the associated appointment.
+
+## Path Parameters
+
+<ParamField path="id" type="number" required>
+  The unique identifier of the review
+</ParamField>
+
+## Response
+
+<ResponseField name="id" type="number">
+  The unique identifier for the review
+</ResponseField>
+
+<ResponseField name="usuarioId" type="number">
+  The ID of the user who created the review
+</ResponseField>
+
+<ResponseField name="turnoId" type="number">
+  The ID of the appointment this review is for
+</ResponseField>
+
+<ResponseField name="establecimientoId" type="number">
+  The ID of the healthcare establishment
+</ResponseField>
+
+<ResponseField name="puntuacion" type="number">
+  Rating score from 1 to 5
+</ResponseField>
+
+<ResponseField name="comentario" type="string">
+  The review comment text
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  Timestamp when the review was created (ISO 8601 format)
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string">
+  Timestamp when the review was last updated (ISO 8601 format)
+</ResponseField>
+
+<ResponseField name="usuario" type="object">
+  Information about the user who wrote the review
+  
+  <ResponseField name="id" type="number">
+    User ID
+  </ResponseField>
+  
+  <ResponseField name="nombre" type="string">
+    User first name
+  </ResponseField>
+  
+  <ResponseField name="apellido" type="string">
+    User last name
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="establecimiento" type="object">
+  Full details of the healthcare establishment
+  
+  <ResponseField name="id" type="number">
+    Establishment ID
+  </ResponseField>
+  
+  <ResponseField name="nombre" type="string">
+    Establishment name
+  </ResponseField>
+  
+  <ResponseField name="tipo" type="string">
+    Type of establishment (e.g., "hospital", "clinica")
+  </ResponseField>
+  
+  <ResponseField name="direccion" type="string">
+    Street address
+  </ResponseField>
+  
+  <ResponseField name="telefono" type="string">
+    Contact phone number
+  </ResponseField>
+  
+  <ResponseField name="lat" type="number">
+    Latitude coordinate
+  </ResponseField>
+  
+  <ResponseField name="lng" type="number">
+    Longitude coordinate
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="turno" type="object">
+  Details about the appointment associated with this review
+  
+  <ResponseField name="id" type="number">
+    Appointment ID
+  </ResponseField>
+  
+  <ResponseField name="fecha" type="string">
+    Appointment date (ISO 8601 format)
+  </ResponseField>
+  
+  <ResponseField name="hora" type="string">
+    Appointment time (HH:MM format)
+  </ResponseField>
+  
+  <ResponseField name="estado" type="string">
+    Appointment status (e.g., "completado", "pendiente")
+  </ResponseField>
+  
+  <ResponseField name="especialidadId" type="number">
+    ID of the medical specialty
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X GET https://api.example.com/resenias/501
+```
+
+## Example Response
+
+```json
+{
+  "id": 501,
+  "usuarioId": 123,
+  "turnoId": 1001,
+  "establecimientoId": 45,
+  "puntuacion": 5,
+  "comentario": "Excelente atención, muy profesional y amable.",
+  "createdAt": "2026-03-09T16:30:00.000Z",
+  "updatedAt": "2026-03-09T16:30:00.000Z",
+  "usuario": {
+    "id": 123,
+    "nombre": "Juan",
+    "apellido": "Pérez"
+  },
+  "establecimiento": {
+    "id": 45,
+    "nombre": "Centro Médico San Rafael",
+    "tipo": "clinica",
+    "direccion": "Av. Corrientes 1234, Buenos Aires",
+    "telefono": "+54 11 4567-8900",
+    "lat": -34.603722,
+    "lng": -58.381592,
+    "horarios": "Lunes a Viernes 8:00-20:00",
+    "createdAt": "2025-01-15T10:00:00.000Z",
+    "updatedAt": "2026-02-20T14:30:00.000Z"
+  },
+  "turno": {
+    "id": 1001,
+    "usuarioId": 123,
+    "establecimientoId": 45,
+    "especialidadId": 3,
+    "fecha": "2026-03-08T00:00:00.000Z",
+    "hora": "14:30",
+    "estado": "completado"
+  }
+}
+```
+
+## Error Responses
+
+### Review Not Found
+
+```json
+{
+  "statusCode": 404,
+  "message": "Reseña no encontrada",
+  "error": "Not Found"
+}
+```
+
+### Invalid ID Format
+
+```json
+{
+  "statusCode": 400,
+  "message": "Invalid review ID format",
+  "error": "Bad Request"
+}
+```
+
+## Use Cases
+
+- Display full review details on a dedicated review page
+- Show context about the appointment and establishment
+- Link reviews to specific healthcare visits
+- Provide comprehensive review information for moderation purposes

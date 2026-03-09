@@ -1,0 +1,160 @@
+---
+title: 'Get Establishments by Specialty'
+api: 'GET /establecimientos/especialidad/:especialidadId'
+description: 'Retrieve all healthcare establishments that offer a specific medical specialty'
+---
+
+## Overview
+
+Find all establishments that provide a particular medical specialty. Returns a list of establishments with their basic information, location data, and calculated review statistics.
+
+## Path Parameters
+
+<ParamField path="especialidadId" type="number" required>
+  Unique identifier of the specialty to search for.
+  
+  **Example:** `3`
+</ParamField>
+
+## Response
+
+Returns an array of establishment objects with the following fields:
+
+<ResponseField name="id" type="number">
+  Unique establishment identifier
+</ResponseField>
+
+<ResponseField name="nombre" type="string">
+  Establishment name
+</ResponseField>
+
+<ResponseField name="tipo" type="string">
+  Type of establishment (hospital, clinic, doctors, etc.)
+</ResponseField>
+
+<ResponseField name="direccion" type="string | null">
+  Physical address
+</ResponseField>
+
+<ResponseField name="telefono" type="string | null">
+  Contact phone number
+</ResponseField>
+
+<ResponseField name="lat" type="number">
+  Latitude coordinate
+</ResponseField>
+
+<ResponseField name="lng" type="number">
+  Longitude coordinate
+</ResponseField>
+
+<ResponseField name="horariosDisponibles" type="string | null">
+  Available schedule for this specialty at this establishment (from the specialty-establishment relationship)
+</ResponseField>
+
+<ResponseField name="promedioEstrellas" type="number | null">
+  Average star rating calculated from all reviews. Null if no reviews exist.
+  
+  **Range:** 1.0 - 5.0 (rounded to 1 decimal place)
+</ResponseField>
+
+<ResponseField name="totalResenias" type="number">
+  Total number of reviews for this establishment
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X GET "https://api.saludmap.com/establecimientos/especialidad/3"
+```
+
+## Example Response
+
+```json
+[
+  {
+    "id": 15,
+    "nombre": "Hospital General San Juan",
+    "tipo": "hospital",
+    "direccion": "Av. Corrientes 1234, Buenos Aires",
+    "telefono": "+54 11 4312-5678",
+    "lat": -34.6037,
+    "lng": -58.3816,
+    "horariosDisponibles": "Lunes a Viernes 8:00-17:00",
+    "promedioEstrellas": 4.3,
+    "totalResenias": 12
+  },
+  {
+    "id": 28,
+    "nombre": "Clínica del Centro",
+    "tipo": "clinic",
+    "direccion": "Calle Florida 890, Buenos Aires",
+    "telefono": "+54 11 4328-9012",
+    "lat": -34.5956,
+    "lng": -58.3752,
+    "horariosDisponibles": "Martes y Jueves 14:00-20:00",
+    "promedioEstrellas": 4.8,
+    "totalResenias": 25
+  },
+  {
+    "id": 42,
+    "nombre": "Consultorio Dr. Méndez",
+    "tipo": "doctors",
+    "direccion": "Av. Belgrano 2345, Buenos Aires",
+    "telefono": "+54 11 4941-3456",
+    "lat": -34.6118,
+    "lng": -58.3894,
+    "horariosDisponibles": null,
+    "promedioEstrellas": null,
+    "totalResenias": 0
+  }
+]
+```
+
+## Error Responses
+
+### 400 Bad Request
+
+Returned when the especialidadId parameter is not a valid integer:
+
+```json
+{
+  "statusCode": 400,
+  "message": "Validation failed (numeric string is expected)",
+  "error": "Bad Request"
+}
+```
+
+### 404 Not Found
+
+Returned when no specialty exists with the specified ID:
+
+```json
+{
+  "statusCode": 404,
+  "message": "Especialidad con ID 3 no encontrada",
+  "error": "Not Found"
+}
+```
+
+## Use Cases
+
+- **Specialty Search**: Allow users to find all locations offering a specific medical service
+- **Map Display**: Plot all establishments with a particular specialty on a map
+- **Comparison**: Compare establishments based on ratings and location for a specific specialty
+- **Availability Check**: See which establishments offer specific schedules for a specialty
+- **Route Planning**: Find the nearest establishment with a required specialty
+
+## Related Endpoints
+
+- `GET /establecimientos/:id/especialidades` - Get all specialties available at a specific establishment
+- `GET /establecimientos/:id` - Get full establishment details
+- `GET /especialidades` - List all available specialties
+
+## Notes
+
+- Results are ordered alphabetically by establishment name
+- The `horariosDisponibles` field comes from the relationship table and is specific to each establishment-specialty combination
+- Average rating is calculated on-the-fly and rounded to 1 decimal place
+- Establishments with no reviews have `promedioEstrellas: null` rather than 0
+- Returns an empty array `[]` if the specialty exists but no establishments offer it
