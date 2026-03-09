@@ -1,0 +1,250 @@
+---
+title: 'Get Establishment by Coordinates'
+api: 'GET /establecimientos/coords/:lat/:lng'
+description: 'Find an establishment by exact coordinates with full details including reviews and specialties'
+---
+
+## Overview
+
+Retrieve a healthcare establishment by its exact geographic coordinates. This endpoint returns complete establishment details including associated reviews (with user information) and available specialties.
+
+## Path Parameters
+
+<ParamField path="lat" type="number" required>
+  Exact latitude coordinate of the establishment.
+  
+  **Example:** `-34.6037`
+</ParamField>
+
+<ParamField path="lng" type="number" required>
+  Exact longitude coordinate of the establishment.
+  
+  **Example:** `-58.3816`
+</ParamField>
+
+## Response
+
+### When Found
+
+Returns the complete establishment object:
+
+<ResponseField name="id" type="number">
+  Unique establishment identifier
+</ResponseField>
+
+<ResponseField name="nombre" type="string">
+  Establishment name
+</ResponseField>
+
+<ResponseField name="tipo" type="string">
+  Type of establishment
+</ResponseField>
+
+<ResponseField name="lat" type="number">
+  Latitude coordinate
+</ResponseField>
+
+<ResponseField name="lng" type="number">
+  Longitude coordinate
+</ResponseField>
+
+<ResponseField name="direccion" type="string | null">
+  Street address
+</ResponseField>
+
+<ResponseField name="telefono" type="string | null">
+  Contact phone number
+</ResponseField>
+
+<ResponseField name="horarios" type="string | null">
+  Operating hours
+</ResponseField>
+
+<ResponseField name="metadata" type="object">
+  Additional metadata
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  ISO 8601 creation timestamp
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string">
+  ISO 8601 last update timestamp
+</ResponseField>
+
+<ResponseField name="resenias" type="array">
+  Full reviews with user information (ordered by most recent):
+  
+  <ResponseField name="id" type="number">
+    Review ID
+  </ResponseField>
+  
+  <ResponseField name="puntuacion" type="number">
+    Rating score
+  </ResponseField>
+  
+  <ResponseField name="comentario" type="string">
+    Review comment
+  </ResponseField>
+  
+  <ResponseField name="createdAt" type="string">
+    Review creation timestamp
+  </ResponseField>
+  
+  <ResponseField name="usuario" type="object">
+    User who wrote the review:
+    
+    <ResponseField name="id" type="number">
+      User ID
+    </ResponseField>
+    
+    <ResponseField name="nombre" type="string">
+      User first name
+    </ResponseField>
+    
+    <ResponseField name="apellido" type="string">
+      User last name
+    </ResponseField>
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="especialidades" type="array">
+  Available specialties:
+  
+  <ResponseField name="especialidad" type="object">
+    <ResponseField name="id" type="number">
+      Specialty ID
+    </ResponseField>
+    
+    <ResponseField name="nombre" type="string">
+      Specialty name
+    </ResponseField>
+    
+    <ResponseField name="descripcion" type="string | null">
+      Specialty description
+    </ResponseField>
+  </ResponseField>
+  
+  <ResponseField name="horariosDisponibles" type="string | null">
+    Available hours for this specialty at this establishment
+  </ResponseField>
+</ResponseField>
+
+### When Not Found
+
+Returns a message object:
+
+```json
+{
+  "message": "No encontrado",
+  "found": false
+}
+```
+
+## Example Request
+
+```bash
+curl -X GET "https://api.saludmap.com/establecimientos/coords/-34.6037/-58.3816"
+```
+
+## Example Response (Found)
+
+```json
+{
+  "id": 15,
+  "nombre": "Hospital Central",
+  "tipo": "hospital",
+  "lat": -34.6037,
+  "lng": -58.3816,
+  "direccion": "Av. Corrientes 1234",
+  "telefono": "+54 11 4567-8900",
+  "horarios": "24 horas",
+  "metadata": {
+    "emergency": true,
+    "beds": 200
+  },
+  "createdAt": "2024-01-10T08:00:00.000Z",
+  "updatedAt": "2024-03-05T12:30:00.000Z",
+  "resenias": [
+    {
+      "id": 101,
+      "puntuacion": 5,
+      "comentario": "Excelente atención y personal muy capacitado",
+      "createdAt": "2024-03-01T10:15:00.000Z",
+      "usuario": {
+        "id": 25,
+        "nombre": "María",
+        "apellido": "González"
+      }
+    },
+    {
+      "id": 98,
+      "puntuacion": 4,
+      "comentario": "Buena infraestructura, un poco de espera",
+      "createdAt": "2024-02-28T14:20:00.000Z",
+      "usuario": {
+        "id": 30,
+        "nombre": "Carlos",
+        "apellido": "Rodríguez"
+      }
+    }
+  ],
+  "especialidades": [
+    {
+      "especialidad": {
+        "id": 1,
+        "nombre": "Cardiología",
+        "descripcion": "Diagnóstico y tratamiento de enfermedades del corazón"
+      },
+      "horariosDisponibles": "Lunes a Viernes 8:00-17:00"
+    },
+    {
+      "especialidad": {
+        "id": 3,
+        "nombre": "Pediatría",
+        "descripcion": "Atención médica para niños y adolescentes"
+      },
+      "horariosDisponibles": "Lunes a Sábado 9:00-18:00"
+    }
+  ]
+}
+```
+
+## Example Response (Not Found)
+
+```json
+{
+  "message": "No encontrado",
+  "found": false
+}
+```
+
+## Error Responses
+
+### 400 Bad Request
+
+Returned when coordinates are not valid numbers:
+
+```json
+{
+  "statusCode": 400,
+  "message": "Validation failed (numeric string is expected)",
+  "error": "Bad Request"
+}
+```
+
+## Use Cases
+
+- **Duplicate Detection**: Check if an establishment exists at specific coordinates before creation
+- **Map Pin Click**: Get full details when user clicks a map marker
+- **Data Enrichment**: Retrieve complete establishment info from OpenStreetMap coordinates
+- **Deduplication**: Find existing records by location
+
+## Notes
+
+- Coordinates must match **exactly** for a result to be returned
+- This is not a proximity search - use `/places` for nearby searches
+- Reviews are ordered by creation date (most recent first)
+- Returns full user details for each review (id, nombre, apellido)
+- Includes all specialties offered at the establishment with their schedules
+- Returns 200 status with a "not found" message rather than 404 when no match exists

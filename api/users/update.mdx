@@ -1,0 +1,157 @@
+---
+title: 'Update User'
+api: 'PUT /usuarios/:id'
+---
+
+<Note>
+  This endpoint is currently not fully implemented in the controller. User updates are handled through specific endpoints like change role.
+</Note>
+
+## Alternative: Change User Role (Admin Only)
+
+Administrators can change a user's role using this endpoint:
+
+### Change User Role
+
+```bash
+POST /usuarios/cambiar-rol
+Authorization: Bearer <admin_jwt_token>
+Content-Type: application/json
+
+{
+  "mail": "juan.perez@example.com",
+  "rol": "admin"
+}
+```
+
+<Warning>
+  This endpoint is restricted to administrators only.
+</Warning>
+
+## Request Body
+
+<ParamField body="mail" type="string" required>
+  Email address of the user whose role should be changed
+</ParamField>
+
+<ParamField body="rol" type="string" required>
+  The new role to assign. Valid values: "usuario", "admin"
+</ParamField>
+
+## Response
+
+<ResponseField name="id" type="number">
+  User ID
+</ResponseField>
+
+<ResponseField name="nombre" type="string">
+  User first name
+</ResponseField>
+
+<ResponseField name="apellido" type="string">
+  User last name
+</ResponseField>
+
+<ResponseField name="mail" type="string">
+  User email address
+</ResponseField>
+
+<ResponseField name="rol" type="string">
+  Updated user role
+</ResponseField>
+
+## Example Request
+
+```bash
+POST /usuarios/cambiar-rol
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Content-Type: application/json
+
+{
+  "mail": "juan.perez@example.com",
+  "rol": "admin"
+}
+```
+
+## Example Response
+
+```json
+{
+  "id": 123,
+  "nombre": "Juan",
+  "apellido": "Pérez",
+  "mail": "juan.perez@example.com",
+  "rol": "admin"
+}
+```
+
+## Error Responses
+
+### Unauthorized (Missing Token)
+
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized"
+}
+```
+
+### Forbidden (Not Admin)
+
+```json
+{
+  "statusCode": 403,
+  "message": "Forbidden resource",
+  "error": "Forbidden"
+}
+```
+
+### User Not Found
+
+```json
+{
+  "statusCode": 404,
+  "message": "User not found",
+  "error": "Not Found"
+}
+```
+
+### Invalid Role
+
+```json
+{
+  "statusCode": 400,
+  "message": "Invalid role. Must be 'usuario' or 'admin'",
+  "error": "Bad Request"
+}
+```
+
+## List All Users (Admin Only)
+
+Administrators can also list all users:
+
+```bash
+GET /usuarios
+Authorization: Bearer <admin_jwt_token>
+```
+
+### Response
+
+```json
+[
+  {
+    "id": 123,
+    "nombre": "Juan",
+    "apellido": "Pérez",
+    "mail": "juan.perez@example.com",
+    "rol": "usuario"
+  },
+  {
+    "id": 124,
+    "nombre": "María",
+    "apellido": "García",
+    "mail": "maria.garcia@example.com",
+    "rol": "admin"
+  }
+]
+```

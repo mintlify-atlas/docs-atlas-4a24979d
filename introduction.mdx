@@ -1,0 +1,90 @@
+---
+title: "Welcome to SaludMap"
+description: "A healthcare facility locator with real-time map search, appointment booking, reviews, and offline support"
+---
+
+## What is SaludMap?
+
+SaludMap is a comprehensive healthcare facility locator platform that helps users find and connect with healthcare providers in their area. Built with React and NestJS, it combines real-time map-based search, appointment booking, user reviews, and offline capabilities into a seamless experience.
+
+<CardGroup cols={2}>
+  <Card title="Find Healthcare Facilities" icon="map-location-dot" href="/features/map-search">
+    Search for hospitals, clinics, doctors, and veterinarians on an interactive map
+  </Card>
+  <Card title="Book Appointments" icon="calendar-check" href="/features/appointments">
+    Schedule appointments (turnos) directly with healthcare providers
+  </Card>
+  <Card title="Read & Write Reviews" icon="star" href="/features/reviews">
+    Share experiences and read reviews from other patients
+  </Card>
+  <Card title="Work Offline" icon="wifi-slash" href="/features/offline-mode">
+    Access maps and facility data even without an internet connection
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<AccordionGroup>
+  <Accordion title="Interactive Map Search" icon="map">
+    Real-time search for healthcare facilities using Leaflet maps with geolocation support, custom filters by facility type, and auto-centering on your current location.
+  </Accordion>
+  
+  <Accordion title="Appointment System" icon="calendar">
+    Complete appointment booking system (turnos) with specialty selection, date/time scheduling, and appointment management for both users and establishments.
+  </Accordion>
+  
+  <Accordion title="Reviews & Ratings" icon="star-half-stroke">
+    User-generated reviews and ratings for healthcare facilities, helping others make informed decisions about their healthcare providers.
+  </Accordion>
+  
+  <Accordion title="Offline Support" icon="download">
+    Precache map tiles and facility data for specific areas, enabling full offline functionality with automatic synchronization when back online.
+  </Accordion>
+  
+  <Accordion title="AI Chatbot Assistant" icon="robot">
+    Powered by Google Gemini, the integrated chatbot helps users find facilities, answer questions, and navigate the platform.
+  </Accordion>
+  
+  <Accordion title="Multi-Language Support" icon="language">
+    Full internationalization (i18n) with support for multiple languages, making the platform accessible to diverse communities.
+  </Accordion>
+</AccordionGroup>
+
+## Technology Stack
+
+SaludMap is built with modern, scalable technologies:
+
+<CardGroup cols={3}>
+  <Card title="Frontend" icon="react">
+    React 19 with Vite, Leaflet maps, React Router, and i18next for internationalization
+  </Card>
+  <Card title="Backend" icon="server">
+    NestJS with Prisma ORM, JWT authentication, and Google Gemini integration
+  </Card>
+  <Card title="Database" icon="database">
+    MySQL with Prisma for type-safe database access and migrations
+  </Card>
+</CardGroup>
+
+## Quick Links
+
+<CardGroup cols={2}>
+  <Card title="Get Started" icon="rocket" href="/quickstart">
+    Launch SaludMap in minutes with our quickstart guide
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/auth/login">
+    Explore the complete REST API documentation
+  </Card>
+  <Card title="User Guide" icon="book-open" href="/guide/authentication">
+    Learn how to use all features of SaludMap
+  </Card>
+  <Card title="Development Setup" icon="hammer" href="/development/local-setup">
+    Set up a local development environment
+  </Card>
+</CardGroup>
+
+## Community & Support
+
+<Card title="GitHub Repository" icon="github" href="https://github.com/GabyAvila1993/SaludMap">
+  View source code, report issues, and contribute to SaludMap
+</Card>

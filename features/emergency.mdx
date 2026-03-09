@@ -1,0 +1,534 @@
+---
+title: 'Emergency Widget'
+description: 'Quick access to emergency services with location-based phone numbers'
+icon: 'circle-exclamation'
+---
+
+## Overview
+
+The Emergency Widget provides immediate access to critical emergency services. It automatically detects the user's location and displays relevant emergency contact numbers for ambulance and police services.
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Auto-Detection" icon="location-crosshairs">
+    Automatically detects country based on timezone
+  </Card>
+  <Card title="One-Click Calling" icon="phone">
+    Direct tel: links for instant phone calls
+  </Card>
+  <Card title="Hospital Search" icon="hospital">
+    Quick navigation to map for nearest facilities
+  </Card>
+  <Card title="Always Accessible" icon="shield">
+    Floating button available from any screen
+  </Card>
+</CardGroup>
+
+## User Interface
+
+### Emergency Button
+
+The widget appears as a prominent S.O.S button:
+
+```jsx EmergencyWidget.jsx
+export const EmergencyWidget = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const { t } = useTranslation();
+
+  return (
+    <div className="emergency-nav-container">
+      <button
+        className="btn-emergency-nav-circle"
+        onClick={() => setIsOpen(true)}
+        title={t('emergency.title', 'Centro de Emergencia')}
+      >
+        <span className="emergency-icon-nav">🚨</span>
+      </button>
+    </div>
+  );
+};
+```
+
+<Frame>
+  <img src="/images/emergency-button.png" alt="Emergency S.O.S button" />
+</Frame>
+
+### Emergency Modal
+
+When activated, a modal displays emergency options:
+
+```jsx
+{isOpen && (
+  <div className="emergency-overlay" onClick={() => setIsOpen(false)}>
+    <div className="emergency-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="emergency-header">
+        <h3>{t('emergency.title', 'Centro de Emergencia')}</h3>
+        <button className="emergency-close" onClick={() => setIsOpen(false)}>✕</button>
+      </div>
+      
+      <div className="emergency-body">
+        <div className="location-detector">
+          📍 {t('emergency.location_detected')}: 
+          <strong>{t(`emergency.${emergencyData.countryKey}`)}</strong>
+        </div>
+        
+        <p>{t('emergency.question', '¿Qué tipo de ayuda necesitas?')}</p>
+        
+        {/* Emergency action buttons */}
+      </div>
+    </div>
+  </div>
+)}
+```
+
+<Frame>
+  <img src="/images/emergency-modal.png" alt="Emergency services modal" />
+</Frame>
+
+## Location Detection
+
+### Timezone-Based Detection
+
+The widget uses timezone information to determine the user's country:
+
+```jsx
+const [emergencyData, setEmergencyData] = useState({
+  countryKey: 'country_international',
+  ambulance: '112',
+  police: '112'
+});
+
+useEffect(() => {
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+
+  // Argentina detection
+  if (timeZone.includes('Argentina') || 
+      timeZone.includes('Buenos_Aires') || 
+      timeZone.includes('Mendoza') || 
+      timeZone.includes('Cordoba')) {
+    setEmergencyData({ 
+      countryKey: 'country_argentina', 
+      ambulance: '107', 
+      police: '911' 
+    });
+  }
+  // France detection
+  else if (timeZone.includes('Paris') || timeZone.includes('Europe/')) {
+    setEmergencyData({ 
+      countryKey: 'country_france', 
+      ambulance: '15', 
+      police: '17' 
+    });
+  }
+  // Americas detection
+  else if (timeZone.includes('America/')) {
+    setEmergencyData({ 
+      countryKey: 'country_america', 
+      ambulance: '911', 
+      police: '911' 
+    });
+  }
+}, []);
+```
+
+<Info>
+The default fallback is the international emergency number 112, which works in most countries.
+</Info>
+
+### Supported Regions
+
+| Region | Ambulance | Police | Detection Method |
+|--------|-----------|--------|------------------|
+| Argentina | 107 | 911 | Timezone: `America/Argentina/*` |
+| France | 15 | 17 | Timezone: `Europe/Paris` |
+| Americas | 911 | 911 | Timezone: `America/*` |
+| International | 112 | 112 | Default fallback |
+
+## Emergency Actions
+
+### Ambulance Button
+
+Direct link to call ambulance services:
+
+```jsx
+<a href={`tel:${emergencyData.ambulance}`} className="emergency-btn btn-red">
+  <span className="btn-icon">🚑</span>
+  <div>
+    <strong>
+      {t('emergency.ambulance_desc', 'Ambulancia')} ({emergencyData.ambulance})
+    </strong>
+  </div>
+</a>
+```
+
+### Police Button
+
+Direct link to call police services:
+
+```jsx
+<a href={`tel:${emergencyData.police}`} className="emergency-btn btn-dark">
+  <span className="btn-icon">🚓</span>
+  <div>
+    <strong>
+      {t('emergency.police_desc', 'Policía')} ({emergencyData.police})
+    </strong>
+  </div>
+</a>
+```
+
+### Find Hospital Button
+
+Navigates to the map to locate nearby hospitals:
+
+```jsx
+<button
+  className="emergency-btn btn-outline"
+  onClick={() => {
+    setIsOpen(false);
+    window.dispatchEvent(new CustomEvent('saludmap:change-tab', { 
+      detail: { tab: 'mapa' } 
+    }));
+  }}
+>
+  <span className="btn-icon">🏥</span>
+  <div>
+    <strong>{t('emergency.find_hospital', 'Buscar Hospital')}</strong>
+    <span>{t('emergency.find_desc', 'Ver centros en el mapa')}</span>
+  </div>
+</button>
+```
+
+## Internationalization
+
+### Translation Keys
+
+All emergency text supports multiple languages:
+
+```javascript i18n translations
+{
+  "emergency": {
+    "title": "Centro de Emergencia",
+    "location_detected": "Ubicación detectada",
+    "country_argentina": "Argentina",
+    "country_france": "Francia",
+    "country_america": "América",
+    "country_international": "Internacional",
+    "question": "¿Qué tipo de ayuda necesitas?",
+    "ambulance_desc": "Ambulancia",
+    "police_desc": "Policía",
+    "find_hospital": "Buscar Hospital",
+    "find_desc": "Ver centros en el mapa"
+  }
+}
+```
+
+### Usage in Component
+
+```jsx
+const { t } = useTranslation();
+
+<h3>{t('emergency.title')}</h3>
+<p>{t('emergency.question')}</p>
+<strong>{t(`emergency.${emergencyData.countryKey}`)}</strong>
+```
+
+## Styling
+
+### Emergency Button Style
+
+The S.O.S button has high visibility:
+
+```css EmergencyWidget.css
+.btn-emergency-nav-circle {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border: 3px solid white;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.8);
+  }
+}
+
+.emergency-icon-nav {
+  font-size: 28px;
+  animation: shake 0.5s infinite;
+}
+
+@keyframes shake {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg); }
+  75% { transform: rotate(5deg); }
+}
+```
+
+### Action Button Colors
+
+```css
+.btn-red {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+}
+
+.btn-dark {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  color: white;
+}
+
+.btn-outline {
+  background: white;
+  border: 2px solid #e5e7eb;
+  color: #1f2937;
+}
+
+.emergency-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+```
+
+## Mobile Optimization
+
+### Tel Links
+
+The `tel:` protocol works seamlessly on mobile devices:
+
+```jsx
+<a href={`tel:${emergencyData.ambulance}`}>
+  {/* Button content */}
+</a>
+```
+
+On mobile:
+- iOS: Opens Phone app with number pre-filled
+- Android: Initiates call directly or shows dialer
+
+On desktop:
+- Opens default phone/calling app if available
+- Otherwise, displays the number
+
+### Touch Targets
+
+All buttons meet minimum touch target size:
+
+```css
+.emergency-btn {
+  padding: 16px 20px;
+  min-height: 60px; /* Minimum 48px, exceeds for safety */
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+```
+
+## Event Integration
+
+### Tab Navigation
+
+The "Find Hospital" button triggers navigation:
+
+```jsx
+window.dispatchEvent(new CustomEvent('saludmap:change-tab', { 
+  detail: { tab: 'mapa' } 
+}));
+```
+
+This event is caught by the main app component:
+
+```jsx App.jsx
+useEffect(() => {
+  const handleTabChange = (e) => {
+    setActiveTab(e.detail.tab);
+  };
+  
+  window.addEventListener('saludmap:change-tab', handleTabChange);
+  return () => window.removeEventListener('saludmap:change-tab', handleTabChange);
+}, []);
+```
+
+## Accessibility
+
+### Keyboard Navigation
+
+```jsx
+<button
+  className="btn-emergency-nav-circle"
+  onClick={() => setIsOpen(true)}
+  onKeyDown={(e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      setIsOpen(true);
+    }
+  }}
+  aria-label="Abrir centro de emergencias"
+>
+  🚨
+</button>
+```
+
+### Screen Readers
+
+```jsx
+<a 
+  href={`tel:${emergencyData.ambulance}`}
+  aria-label={`Llamar ambulancia al ${emergencyData.ambulance}`}
+>
+  <span aria-hidden="true">🚑</span>
+  <strong>Ambulancia ({emergencyData.ambulance})</strong>
+</a>
+```
+
+### Focus Management
+
+Modal traps focus when open:
+
+```jsx
+useEffect(() => {
+  if (isOpen) {
+    // Save previously focused element
+    const previouslyFocused = document.activeElement;
+    
+    // Focus first button in modal
+    const firstButton = document.querySelector('.emergency-modal button');
+    firstButton?.focus();
+    
+    return () => {
+      // Restore focus on close
+      previouslyFocused?.focus();
+    };
+  }
+}, [isOpen]);
+```
+
+## Safety Considerations
+
+<Warning>
+**Critical Safety Features:**
+- Numbers are validated and country-specific
+- No confirmation dialogs - immediate calling when clicked
+- Always visible and accessible from any screen
+- High contrast design for visibility in stressful situations
+</Warning>
+
+### Best Practices
+
+<AccordionGroup>
+  <Accordion title="Clear Labeling">
+    All buttons clearly indicate what emergency service they call, including the phone number.
+  </Accordion>
+  
+  <Accordion title="No Confirmation">
+    Emergency calls should never require confirmation dialogs - every second counts.
+  </Accordion>
+  
+  <Accordion title="Visual Prominence">
+    The emergency button uses red color and pulsing animation to stand out.
+  </Accordion>
+  
+  <Accordion title="Offline Functionality">
+    The emergency widget works even without internet connection (phone calls don't require data).
+  </Accordion>
+</AccordionGroup>
+
+## Future Enhancements
+
+<CardGroup cols={2}>
+  <Card title="GPS Sharing" icon="location-dot">
+    Send current coordinates with emergency calls
+  </Card>
+  <Card title="Medical Info" icon="id-card">
+    Store and share medical information in emergencies
+  </Card>
+  <Card title="Emergency Contacts" icon="user-plus">
+    Add personal emergency contacts beyond services
+  </Card>
+  <Card title="Multilingual" icon="language">
+    Pre-translated emergency phrases for travelers
+  </Card>
+</CardGroup>
+
+## Testing
+
+<Warning>
+**Never test emergency numbers by actually calling them!** This wastes emergency services' time and may be illegal.
+</Warning>
+
+### Testing Approach
+
+```jsx
+const DEV_MODE = process.env.NODE_ENV === 'development';
+
+const getPhoneNumber = (number) => {
+  if (DEV_MODE) {
+    return '#'; // Disabled in development
+  }
+  return number;
+};
+
+<a href={`tel:${getPhoneNumber(emergencyData.ambulance)}`}>
+  Ambulancia
+</a>
+```
+
+### Testing Checklist
+
+- [ ] Location detection works correctly
+- [ ] Correct numbers displayed for each region
+- [ ] Buttons are easily tappable on mobile
+- [ ] Modal opens and closes properly
+- [ ] Translation keys load correctly
+- [ ] "Find Hospital" navigates to map
+- [ ] Accessibility features work
+- [ ] Visual animations render smoothly
+
+## Related Features
+
+<CardGroup cols={2}>
+  <Card title="Map Search" icon="map" href="/features/map-search">
+    Find nearest hospitals from emergency widget
+  </Card>
+  <Card title="Chatbot" icon="robot" href="/features/chatbot">
+    AURA can provide emergency guidance
+  </Card>
+</CardGroup>
+
+## Technical Implementation
+
+### Dependencies
+
+```json
+{
+  "dependencies": {
+    "react": "^18.x",
+    "react-i18next": "^13.x"
+  }
+}
+```
+
+### Component Location
+
+```
+src/
+  components/
+    EmergencyWidget.jsx
+    EmergencyWidget.css
+  locales/
+    en/translation.json
+    es/translation.json
+```
+
+<Tip>
+Consider adding more region-specific emergency numbers as your user base grows. Use IP geolocation for more accurate detection when timezone detection is ambiguous.
+</Tip>

@@ -1,0 +1,517 @@
+---
+title: 'Review & Rating System'
+description: 'User reviews and ratings for healthcare facilities with star ratings'
+icon: 'star'
+---
+
+## Overview
+
+The review system allows users to rate and review healthcare facilities based on their experiences. Users can only review facilities where they've had completed appointments, ensuring authentic feedback.
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Star Ratings" icon="star">
+    5-star rating system with visual display
+  </Card>
+  <Card title="Verified Reviews" icon="badge-check">
+    Only users with past appointments can review
+  </Card>
+  <Card title="Average Scores" icon="chart-line">
+    Aggregate ratings displayed on facility pages
+  </Card>
+  <Card title="User Profiles" icon="user">
+    Review author names and avatars displayed
+  </Card>
+</CardGroup>
+
+## Viewing Reviews
+
+### Reviews Component
+
+Reviews are displayed on facility detail pages:
+
+```jsx Resenias.jsx
+export default function Resenias({ resenias, promedioEstrellas, totalResenias, loading }) {
+  if (loading) {
+    return <div className="loading-resenias">Cargando reseñas...</div>;
+  }
+
+  if (!resenias || resenias.length === 0) {
+    return (
+      <div className="no-resenias">
+        <p>📝 Aún no hay reseñas para este establecimiento</p>
+        <p className="no-resenias-subtitle">Sé el primero en dejar tu opinión</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="resenias-container">
+      <div className="resenias-header">
+        <h3>Reseñas ({totalResenias})</h3>
+        <div className="promedio-container">
+          <div className="promedio-numero">{promedioEstrellas}</div>
+          <Estrellas puntuacion={Math.round(promedioEstrellas)} />
+          <div className="promedio-texto">
+            Promedio de {totalResenias} {totalResenias === 1 ? 'reseña' : 'reseñas'}
+          </div>
+        </div>
+      </div>
+      
+      <div className="resenias-lista">
+        {resenias.map((resenia) => (
+          <ReseniaItem key={resenia.id} resenia={resenia} />
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### Star Display Component
+
+The `Estrellas` component renders star ratings:
+
+```jsx
+const Estrellas = ({ puntuacion, size = 'medium' }) => {
+  const stars = [];
+  for (let i = 1; i <= 5; i++) {
+    stars.push(
+      <span
+        key={i}
+        className={`star ${i <= puntuacion ? 'filled' : 'empty'} ${size}`}
+      >
+        ★
+      </span>
+    );
+  }
+  return <div className="estrellas">{stars}</div>;
+};
+```
+
+<Frame>
+  <img src="/images/reviews-display.png" alt="Reviews display" />
+</Frame>
+
+## Individual Review Cards
+
+### ReseniaItem Component
+
+Each review is displayed in a card format:
+
+```jsx
+const ReseniaItem = ({ resenia }) => {
+  const formatearFecha = (fecha) => {
+    const date = new Date(fecha);
+    return date.toLocaleDateString('es-AR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  return (
+    <div className="resenia-item">
+      <div className="resenia-header">
+        <div className="resenia-usuario">
+          <div className="usuario-avatar">
+            {resenia.usuario.nombre.charAt(0)}
+            {resenia.usuario.apellido.charAt(0)}
+          </div>
+          <div className="usuario-info">
+            <div className="usuario-nombre">
+              {resenia.usuario.nombre} {resenia.usuario.apellido}
+            </div>
+            <div className="resenia-fecha">{formatearFecha(resenia.createdAt)}</div>
+          </div>
+        </div>
+        <Estrellas puntuacion={resenia.puntuacion} size="small" />
+      </div>
+      <div className="resenia-comentario">{resenia.comentario}</div>
+    </div>
+  );
+};
+```
+
+### User Avatars
+
+User avatars display initials in a circular badge:
+
+```css
+.usuario-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+}
+```
+
+## Creating Reviews
+
+### Authentication Check
+
+<Warning>
+Only authenticated users with completed appointments can write reviews.
+</Warning>
+
+```jsx CrearResenia.jsx
+const { turnos, loading: loadingTurnos } = useTurnosParaReseniar(establecimientoId);
+
+if (!turnos || turnos.length === 0) {
+  return (
+    <div className="no-turnos">
+      <p>⚠️ No tienes turnos disponibles para reseñar en este establecimiento</p>
+      <p className="no-turnos-subtitle">
+        Solo puedes dejar reseñas para turnos que ya hayan pasado
+      </p>
+    </div>
+  );
+}
+```
+
+### Review Form
+
+The form includes appointment selection, star rating, and comment field:
+
+```jsx
+<form onSubmit={handleSubmit} className="form-resenia">
+  {/* Appointment selector */}
+  {turnos.length > 1 && (
+    <div className="form-group">
+      <label>Selecciona el turno a reseñar:</label>
+      <select
+        value={turnoSeleccionado || ''}
+        onChange={(e) => setTurnoSeleccionado(Number(e.target.value))}
+      >
+        <option value="">-- Seleccionar turno --</option>
+        {turnos.map((turno) => (
+          <option key={turno.id} value={turno.id}>
+            {formatearFecha(turno.fecha)} - {turno.hora}
+            {turno.profesionalNombre && ` - ${turno.profesionalNombre}`}
+          </option>
+        ))}
+      </select>
+    </div>
+  )}
+  
+  {/* Star rating selector */}
+  <div className="form-group">
+    <label>Puntuación:</label>
+    <SelectorEstrellas puntuacion={puntuacion} onChange={setPuntuacion} />
+  </div>
+  
+  {/* Comment textarea */}
+  <div className="form-group">
+    <label>Tu opinión:</label>
+    <textarea
+      value={comentario}
+      onChange={(e) => setComentario(e.target.value)}
+      placeholder="Comparte tu experiencia con este establecimiento..."
+      rows={5}
+      maxLength={1000}
+    />
+    <div className="caracteres-contador">
+      {comentario.length} / 1000 caracteres
+    </div>
+  </div>
+  
+  <button type="submit" disabled={submitting}>
+    {submitting ? 'Publicando...' : 'Publicar reseña'}
+  </button>
+</form>
+```
+
+## Interactive Star Selector
+
+### SelectorEstrellas Component
+
+The star selector provides hover effects and click handling:
+
+```jsx
+const SelectorEstrellas = ({ puntuacion, onChange }) => {
+  const [hover, setHover] = useState(0);
+
+  return (
+    <div className="selector-estrellas">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          className={`star-button ${star <= (hover || puntuacion) ? 'filled' : 'empty'}`}
+          onClick={() => onChange(star)}
+          onMouseEnter={() => setHover(star)}
+          onMouseLeave={() => setHover(0)}
+          aria-label={`${star} ${star === 1 ? 'estrella' : 'estrellas'}`}
+        >
+          ★
+        </button>
+      ))}
+      <span className="puntuacion-texto">
+        {puntuacion > 0 ? `${puntuacion} de 5 estrellas` : 'Selecciona una puntuación'}
+      </span>
+    </div>
+  );
+};
+```
+
+<Frame>
+  <img src="/images/star-selector.png" alt="Interactive star selector" />
+</Frame>
+
+## Form Validation
+
+### Client-Side Validation
+
+The form validates all required fields before submission:
+
+```jsx
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError(null);
+
+  // Validations
+  if (!turnoSeleccionado) {
+    setError('Debe seleccionar un turno');
+    return;
+  }
+  if (puntuacion === 0) {
+    setError('Debe seleccionar una puntuación');
+    return;
+  }
+  if (!comentario.trim()) {
+    setError('Debe escribir un comentario');
+    return;
+  }
+  if (comentario.trim().length < 10) {
+    setError('El comentario debe tener al menos 10 caracteres');
+    return;
+  }
+
+  // Submit review
+  await reseniasService.crearResenia(
+    turnoSeleccionado,
+    establecimientoId,
+    puntuacion,
+    comentario.trim()
+  );
+};
+```
+
+<Info>
+Comments must be at least 10 characters and no more than 1000 characters.
+</Info>
+
+## Submitting Reviews
+
+### Backend API Call
+
+Reviews are submitted to the backend API:
+
+```jsx reseniasService.js
+const crearResenia = async (turnoId, establecimientoId, puntuacion, comentario) => {
+  const response = await axios.post('/api/resenias', {
+    turnoId,
+    establecimientoId,
+    puntuacion,
+    comentario
+  });
+  return response.data;
+};
+```
+
+### Success Feedback
+
+After successful submission, users see a success message:
+
+```jsx
+if (success) {
+  return (
+    <div className="success-message">
+      <div className="success-icon">✓</div>
+      <h3>¡Reseña publicada con éxito!</h3>
+      <p>Gracias por compartir tu experiencia</p>
+    </div>
+  );
+}
+```
+
+## Loading Reviews
+
+### useResenias Hook
+
+The custom hook fetches reviews for a specific facility:
+
+```jsx useResenias.js
+export const useResenias = (establecimientoId) => {
+  const [resenias, setResenias] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [promedioEstrellas, setPromedioEstrellas] = useState(0);
+  const [totalResenias, setTotalResenias] = useState(0);
+
+  useEffect(() => {
+    if (!establecimientoId) return;
+
+    const fetchResenias = async () => {
+      try {
+        const data = await reseniasService.getReseniasByEstablecimiento(establecimientoId);
+        setResenias(data.resenias);
+        setPromedioEstrellas(data.promedio);
+        setTotalResenias(data.total);
+      } catch (error) {
+        console.error('Error fetching reviews:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchResenias();
+  }, [establecimientoId]);
+
+  return { resenias, loading, promedioEstrellas, totalResenias };
+};
+```
+
+## Integration with Map
+
+### Displaying Reviews on Facility Cards
+
+Reviews are shown in the establishment info panel:
+
+```jsx EstablishmentInfo.jsx
+<EstablishmentInfo
+  place={selectedPlace}
+  establecimiento={selectedEstablecimiento}
+  resenias={resenias}
+  loadingResenias={loadingResenias}
+  promedioEstrellas={promedioEstrellas}
+  totalResenias={totalResenias}
+/>
+```
+
+### Review Statistics
+
+Average ratings are displayed alongside facility markers:
+
+```jsx
+{promedioEstrellas > 0 && (
+  <div className="rating-badge">
+    ⭐ {promedioEstrellas.toFixed(1)} ({totalResenias})
+  </div>
+)}
+```
+
+## Appointment-Review Connection
+
+### useTurnosParaReseniar Hook
+
+This hook fetches only appointments eligible for review:
+
+```jsx
+export const useTurnosParaReseniar = (establecimientoId) => {
+  const [turnos, setTurnos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!user?.mail || !establecimientoId) return;
+
+    const fetchTurnos = async () => {
+      try {
+        const allTurnos = await fetchMisTurnos(user.mail);
+        
+        // Filter: completed appointments at this facility without reviews
+        const turnosElegibles = allTurnos.filter(turno => {
+          const turnoFecha = new Date(turno.datetime || turno.fecha);
+          const esDelEstablecimiento = turno.establecimientoId === establecimientoId;
+          const esPasado = turnoFecha < new Date();
+          const noTieneResenia = !turno.resenia;
+          
+          return esDelEstablecimiento && esPasado && noTieneResenia;
+        });
+        
+        setTurnos(turnosElegibles);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTurnos();
+  }, [user, establecimientoId]);
+
+  return { turnos, loading };
+};
+```
+
+<Note>
+Users can only review each appointment once. Appointments with existing reviews are filtered out.
+</Note>
+
+## Styling
+
+### CSS Structure
+
+```css Resenias.css
+.resenias-container {
+  padding: 20px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+.resenia-item {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.star.filled {
+  color: #fbbf24;
+  text-shadow: 0 0 2px rgba(251, 191, 36, 0.5);
+}
+
+.star.empty {
+  color: #d1d5db;
+}
+```
+
+## Related Features
+
+<CardGroup cols={2}>
+  <Card title="Appointments" icon="calendar" href="/features/appointments">
+    Book appointments to leave reviews
+  </Card>
+  <Card title="Map Search" icon="map" href="/features/map-search">
+    View facility ratings on the map
+  </Card>
+  <Card title="Chatbot" icon="robot" href="/features/chatbot">
+    Ask about facility reviews
+  </Card>
+</CardGroup>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Verified Reviews Only">
+    Only allowing reviews from users with completed appointments ensures authenticity and prevents spam.
+  </Accordion>
+  
+  <Accordion title="Character Limits">
+    Setting minimum (10) and maximum (1000) character limits ensures quality feedback without overwhelming readers.
+  </Accordion>
+  
+  <Accordion title="Anonymous Option">
+    While names are displayed, consider adding an anonymous review option for sensitive feedback.
+  </Accordion>
+</AccordionGroup>
+
+<Tip>
+Consider adding review moderation for inappropriate content and the ability for facility owners to respond to reviews.
+</Tip>

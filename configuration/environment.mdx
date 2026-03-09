@@ -1,0 +1,288 @@
+---
+title: Environment Variables
+description: Configure environment variables for SaludMap backend and frontend
+---
+
+# Environment Variables
+
+SaludMap uses environment variables to configure both the backend (NestJS) and frontend (React + Vite) environments. This allows you to customize settings for different deployment scenarios without modifying code.
+
+## Backend Environment Variables
+
+The backend uses NestJS's `@nestjs/config` module to load environment variables from `.env` files.
+
+### Configuration Loading
+
+Defined in `backend/src/app.module.ts:28-31`:
+
+```typescript
+ConfigModule.forRoot({
+  isGlobal: true,
+  envFilePath: ['.env', '.env.production'],
+})
+```
+
+The module loads environment files in order:
+1. `.env` - Development/local configuration
+2. `.env.production` - Production overrides
+
+### Required Variables
+
+#### Database Configuration
+
+```bash
+DATABASE_URL="mysql://user:password@localhost:3306/saludmap"
+```
+
+This variable is required by Prisma for database connections. See [Database Configuration](/configuration/database) for details.
+
+#### JWT Configuration
+
+```bash
+# JWT secret key for token signing
+JWT_SECRET="your-super-secure-secret-change-in-production"
+
+# Token expiration time
+JWT_EXPIRES_IN="24h"
+```
+
+Configured in `backend/src/app.module.ts:32-44`:
+
+```typescript
+JwtModule.registerAsync({
+  imports: [ConfigModule],
+  global: true,
+  useFactory: async (configService: ConfigService) => ({
+    secret:
+      configService.get<string>('JWT_SECRET') ||
+      'tu-secreto-super-seguro-cambiar-en-produccion',
+    signOptions: {
+      expiresIn: configService.get<string>('JWT_EXPIRES_IN') || '24h',
+    },
+  }),
+  inject: [ConfigService],
+})
+```
+
+<Warning>
+  Always change the default JWT secret in production! Use a strong, randomly generated secret.
+</Warning>
+
+### Optional Variables
+
+#### API Keys
+
+```bash
+# Gemini AI API key for chatbot functionality
+GEMINI_API_KEY="your-gemini-api-key"
+
+# Google Places API key
+GOOGLE_PLACES_API_KEY="your-places-api-key"
+```
+
+#### Server Configuration
+
+```bash
+# Server port (default: 3000)
+PORT=3000
+
+# Node environment
+NODE_ENV="development"
+```
+
+#### CORS Configuration
+
+```bash
+# Allowed origins for CORS
+CORS_ORIGIN="http://localhost:5173,https://yourdomain.com"
+```
+
+## Frontend Environment Variables
+
+Vite uses a special naming convention for environment variables. Only variables prefixed with `VITE_` are exposed to the client-side code.
+
+### Creating Environment Files
+
+Create these files in the `Frontend/` directory:
+
+- `.env` - Default variables
+- `.env.local` - Local overrides (not committed to git)
+- `.env.production` - Production variables
+- `.env.development` - Development variables
+
+### Common Variables
+
+```bash
+# Backend API URL
+VITE_API_URL="http://localhost:3000"
+
+# Google Maps API key (for frontend maps)
+VITE_GOOGLE_MAPS_KEY="your-maps-api-key"
+
+# Gemini API key (if using client-side AI features)
+VITE_GEMINI_API_KEY="your-gemini-api-key"
+
+# Environment name
+VITE_ENV="development"
+```
+
+### Accessing Variables in Code
+
+In React components:
+
+```javascript
+const apiUrl = import.meta.env.VITE_API_URL;
+const googleMapsKey = import.meta.env.VITE_GOOGLE_MAPS_KEY;
+```
+
+<Info>
+  Environment variables are statically replaced at build time. Changes require rebuilding the application.
+</Info>
+
+## Example Configuration Files
+
+### Backend `.env` Example
+
+```bash
+# Database
+DATABASE_URL="mysql://saludmap_user:password123@localhost:3306/saludmap_dev"
+
+# JWT
+JWT_SECRET="dev-secret-key-change-in-production-12345"
+JWT_EXPIRES_IN="24h"
+
+# Server
+PORT=3000
+NODE_ENV="development"
+
+# APIs
+GEMINI_API_KEY="AIza..."
+GOOGLE_PLACES_API_KEY="AIza..."
+
+# CORS
+CORS_ORIGIN="http://localhost:5173"
+```
+
+### Backend `.env.production` Example
+
+```bash
+# Database
+DATABASE_URL="mysql://prod_user:strong_password@prod-db-server:3306/saludmap"
+
+# JWT
+JWT_SECRET="production-secret-key-very-long-and-random-abcdef123456"
+JWT_EXPIRES_IN="12h"
+
+# Server
+PORT=8080
+NODE_ENV="production"
+
+# CORS
+CORS_ORIGIN="https://saludmap.com,https://www.saludmap.com"
+```
+
+### Frontend `.env` Example
+
+```bash
+# Backend API
+VITE_API_URL="http://localhost:3000"
+
+# Google Maps
+VITE_GOOGLE_MAPS_KEY="AIza..."
+
+# Environment
+VITE_ENV="development"
+```
+
+### Frontend `.env.production` Example
+
+```bash
+# Backend API
+VITE_API_URL="https://api.saludmap.com"
+
+# Google Maps
+VITE_GOOGLE_MAPS_KEY="AIza..."
+
+# Environment
+VITE_ENV="production"
+```
+
+## Security Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Never Commit Secrets" icon="lock">
+    Add `.env` files to `.gitignore`. Never commit API keys, passwords, or secrets to version control.
+  </Card>
+  
+  <Card title="Use Strong Secrets" icon="key">
+    Generate cryptographically secure random strings for JWT secrets and other sensitive values.
+  </Card>
+  
+  <Card title="Rotate Regularly" icon="rotate">
+    Regularly rotate API keys and secrets, especially after team member changes.
+  </Card>
+  
+  <Card title="Environment Separation" icon="layer-group">
+    Use different API keys and secrets for development, staging, and production environments.
+  </Card>
+</CardGroup>
+
+## Validation
+
+You can add environment variable validation using class-validator:
+
+```typescript
+import { IsString, IsNumber, IsUrl } from 'class-validator';
+
+export class EnvironmentVariables {
+  @IsString()
+  JWT_SECRET: string;
+
+  @IsString()
+  DATABASE_URL: string;
+
+  @IsNumber()
+  PORT: number;
+}
+```
+
+Then configure validation in `app.module.ts`:
+
+```typescript
+ConfigModule.forRoot({
+  isGlobal: true,
+  validationSchema: EnvironmentVariables,
+  validationOptions: {
+    allowUnknown: true,
+    abortEarly: false,
+  },
+})
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Variables not loading">
+    - Ensure the `.env` file is in the correct directory (root for backend, `Frontend/` for frontend)
+    - Check that variable names don't have spaces around the `=` sign
+    - Restart the development server after changing environment variables
+  </Accordion>
+
+  <Accordion title="Frontend variables undefined">
+    - Verify variables are prefixed with `VITE_`
+    - Rebuild the application after adding new variables
+    - Check browser console for import errors
+  </Accordion>
+
+  <Accordion title="Database connection fails">
+    - Verify `DATABASE_URL` format matches Prisma expectations
+    - Ensure database server is running and accessible
+    - Check firewall and network settings
+  </Accordion>
+
+  <Accordion title="JWT errors">
+    - Ensure `JWT_SECRET` is set and matches between services
+    - Verify `JWT_EXPIRES_IN` uses valid time format (e.g., "24h", "7d")
+    - Check that tokens aren't expired
+  </Accordion>
+</AccordionGroup>

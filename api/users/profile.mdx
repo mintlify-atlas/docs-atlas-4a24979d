@@ -1,0 +1,91 @@
+---
+title: 'Get User Profile'
+api: 'GET /usuarios/profile'
+---
+
+<Note>
+  This endpoint is currently not implemented in the controller. User profile information is typically returned during login and registration.
+</Note>
+
+## Alternative: Get Profile from Token
+
+User profile information is included in the response of these endpoints:
+
+### Login Response
+
+```bash
+POST /usuarios/login
+```
+
+Returns:
+
+```json
+{
+  "id": 123,
+  "nombre": "Juan",
+  "apellido": "Pérez",
+  "mail": "juan.perez@example.com",
+  "rol": "usuario",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+### Register Response
+
+```bash
+POST /usuarios/register
+```
+
+Returns:
+
+```json
+{
+  "id": 124,
+  "nombre": "María",
+  "apellido": "García",
+  "mail": "maria.garcia@example.com",
+  "rol": "usuario",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+## JWT Token Payload
+
+The JWT token contains user information:
+
+```json
+{
+  "sub": 123,
+  "mail": "juan.perez@example.com",
+  "rol": "usuario",
+  "iat": 1709997600,
+  "exp": 1710084000
+}
+```
+
+## Decoding the Token
+
+You can decode the JWT token client-side to extract user information:
+
+```javascript
+function parseJwt(token) {
+  const base64Url = token.split('.')[1];
+  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+  const jsonPayload = decodeURIComponent(
+    atob(base64)
+      .split('')
+      .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+      .join('')
+  );
+  return JSON.parse(jsonPayload);
+}
+
+const userInfo = parseJwt(token);
+console.log(userInfo); // { sub: 123, mail: "...", rol: "usuario" }
+```
+
+## Related Endpoints
+
+- [Login](/api/auth/login) - Authenticate and get user profile
+- [Register](/api/auth/register) - Create account and get user profile
+- [Update User](/api/users/update) - Update user information

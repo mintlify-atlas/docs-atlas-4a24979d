@@ -1,0 +1,30 @@
+---
+title: 'Delete Appointment'
+api: 'DELETE /turnos/:id'
+---
+
+<Note>
+  This endpoint is not currently implemented in the controller. To cancel an appointment, use the [Update Appointment](/api/appointments/update) endpoint with `action: "cancelar"`.
+</Note>
+
+## Alternative: Cancel Appointment
+
+Instead of deleting, appointments should be cancelled to maintain historical records:
+
+```bash
+PUT /turnos/:id
+Content-Type: application/json
+
+{
+  "action": "cancelar"
+}
+```
+
+See the [Update Appointment](/api/appointments/update) documentation for more details.
+
+## Why Cancel Instead of Delete?
+
+- Maintains appointment history for analytics
+- Preserves data integrity with related records (reviews, etc.)
+- Allows users to view their past cancelled appointments
+- Enables establishments to track cancellation patterns

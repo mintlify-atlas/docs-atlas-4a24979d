@@ -1,80 +1,206 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: 'Quickstart Guide'
+description: 'Get started with SaludMap in minutes. Learn how to access the app, find healthcare facilities, and book appointments.'
 ---
 
-## Get started in three steps
+## Welcome to SaludMap
 
-Get your documentation site running locally and make your first customization.
+SaludMap is a healthcare facility locator that helps you find hospitals, clinics, medical centers, and veterinary services near you. This guide will walk you through the essential features to get you started.
 
-### Step 1: Set up your local environment
-
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+<Steps>
+  <Step title="Access the Application">
+    Open SaludMap in your web browser. The application will load with an interactive map interface.
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
+    <Note>
+      SaludMap works best on modern browsers like Chrome, Firefox, Safari, or Edge.
+    </Note>
+  </Step>
+
+  <Step title="Allow Location Permissions">
+    When prompted, click **Allow** to grant location permissions. This enables SaludMap to:
+    - Show your current location on the map
+    - Find nearby healthcare facilities
+    - Provide accurate distance calculations
     
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
+    <Info>
+      You can manually search for locations if you prefer not to share your location.
+    </Info>
     
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    ### Getting Your Location
+    
+    Click the **location button** (📍) in the map controls to center the map on your current position. The map will automatically recenter as your location changes.
+    
+    <Tip>
+      Use the **Stop button** to disable continuous location tracking and save battery.
+    </Tip>
+  </Step>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+  <Step title="Search for Healthcare Facilities">
+    SaludMap offers multiple ways to find the care you need:
+    
+    ### Using Filters
+    
+    1. Click the **Filters button** to open the filter modal
+    2. Select facility types:
+       - Hospital
+       - Clínica (Clinic)
+       - Médico (Doctor)
+       - Veterinaria (Veterinary)
+       - And more...
+    3. Click **Todos** (All) to quickly select or deselect all filters
+    4. Apply your selections to see matching facilities on the map
+    
+    ### Searching Nearby
+    
+    The app automatically displays nearby facilities based on your current map view. As you pan and zoom the map, relevant facilities appear as markers.
+    
+    <Tip>
+      Zoom in closer to see more detailed facility information and discover smaller clinics in your area.
+    </Tip>
+  </Step>
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+  <Step title="View Facility Details">
+    Click on any facility marker to open detailed information:
+    
+    - **Name and Type**: Facility name and category
+    - **Address**: Full street address with directions
+    - **Phone Number**: Direct contact for inquiries
+    - **Operating Hours**: Opening hours and current status (open/closed)
+    - **Specialties**: Available medical specialties and services
+    - **Reviews**: User ratings and comments
+    - **Analytics**: Basic statistics and metrics (if available)
+    
+    <Info>
+      The operating hours feature shows real-time status, so you'll know if a facility is currently open before you visit.
+    </Info>
+  </Step>
 
-### Step 3: Go live
+  <Step title="Book an Appointment">
+    To reserve an appointment at a facility:
+    
+    ### Authentication Required
+    
+    If you haven't logged in yet, you'll see an authentication modal. Choose to:
+    - **Sign In**: Use your existing account credentials
+    - **Register**: Create a new account with your name, email, and password
+    
+    <CodeGroup>
+    ```text Sign In
+    Email: your.email@example.com
+    Password: ••••••••
+    ```
+    
+    ```text Register
+    Name: Your Name
+    Last Name: Your Last Name
+    Email: your.email@example.com
+    Password: ••••••••
+    ```
+    </CodeGroup>
+    
+    ### Request an Appointment
+    
+    Once authenticated:
+    
+    1. Open the facility details from the map
+    2. Click **Request Appointment** (Solicitar Turno)
+    3. Select:
+       - **Specialty**: Choose from available medical specialties
+       - **Date**: Pick your preferred appointment date
+       - **Time**: Select an available time slot
+    4. Confirm your request
+    5. You'll receive feedback on your appointment status (pending/confirmed)
+    
+    <Warning>
+      Appointment availability depends on the facility's schedule. Some facilities may require phone confirmation.
+    </Warning>
+  </Step>
+</Steps>
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+## Additional Features
 
-## Next steps
+### Save Your Favorite Locations
 
-Now that you have your docs running, explore these key features:
+Click **Save Location** to store the current map position with a custom name. Access your saved locations anytime from the saved locations list.
 
-<CardGroup cols={2}>
+### Read and Write Reviews
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+After visiting a facility:
+1. Open the facility details
+2. Navigate to the reviews section
+3. Add your rating (1-5 stars) and comment
+4. Help others make informed healthcare decisions
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+You must be logged in and have a completed appointment to write a review.
 </Note>
+
+### Customize Your Experience
+
+#### Theme Selection
+Click the **theme button** to toggle between light and dark mode. Your preference is saved automatically.
+
+#### Language Options
+Use the **language selector** to switch between supported languages. The entire interface updates instantly.
+
+### Offline Access
+
+SaludMap supports offline functionality:
+
+1. Click the **Download Area** button
+2. Select the region you want to preload
+3. The app downloads map tiles and facility data
+4. Access this information even without an internet connection
+
+<Tip>
+Download your home and work areas for reliable access anywhere, anytime.
+</Tip>
+
+## Managing Your Account
+
+### View Your Appointments
+
+Access your appointment history and upcoming visits from your user profile. Track:
+- Pending appointments
+- Confirmed visits
+- Past appointments
+- Appointment details and facility information
+
+### User Preferences
+
+All your settings sync across sessions:
+- Theme preference (light/dark mode)
+- Language selection
+- Saved locations
+- Map view preferences
+
+## Getting Help
+
+If you encounter any issues or have questions:
+- Check facility details for direct contact information
+- Use the in-app feedback options
+- Contact facility support directly for appointment-specific questions
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Explore Features" icon="map">
+    Try out all the map controls, filters, and search options
+  </Card>
+  
+  <Card title="Save Locations" icon="bookmark">
+    Build your collection of frequently visited facilities
+  </Card>
+  
+  <Card title="Leave Reviews" icon="star">
+    Share your experiences to help the community
+  </Card>
+  
+  <Card title="Go Offline" icon="download">
+    Download areas for access without internet
+  </Card>
+</CardGroup>
+
+---
+
+You're now ready to make the most of SaludMap! Start exploring healthcare facilities in your area and book your next appointment with ease.

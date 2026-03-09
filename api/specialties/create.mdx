@@ -1,0 +1,136 @@
+---
+title: 'Create Specialty'
+api: 'POST /especialidades'
+---
+
+Creates a new medical specialty. This endpoint requires JWT authentication and admin role.
+
+<Warning>
+  This endpoint is restricted to administrators only. Requires valid JWT token with admin role.
+</Warning>
+
+## Authentication
+
+```bash
+Authorization: Bearer <admin_jwt_token>
+```
+
+The user must have the `admin` role to access this endpoint.
+
+## Request Body
+
+<ParamField body="nombre" type="string" required>
+  The name of the medical specialty
+</ParamField>
+
+<ParamField body="descripcion" type="string">
+  A description of the specialty (optional)
+</ParamField>
+
+## Response
+
+<ResponseField name="id" type="number">
+  The unique identifier for the created specialty
+</ResponseField>
+
+<ResponseField name="nombre" type="string">
+  The name of the medical specialty
+</ResponseField>
+
+<ResponseField name="descripcion" type="string">
+  The description of the specialty
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  Timestamp when the specialty was created
+</ResponseField>
+
+## Example Request
+
+```bash
+POST /especialidades
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Content-Type: application/json
+
+{
+  "nombre": "Neurología",
+  "descripcion": "Especialidad médica que trata los trastornos del sistema nervioso"
+}
+```
+
+## Example Response
+
+```json
+{
+  "id": 8,
+  "nombre": "Neurología",
+  "descripcion": "Especialidad médica que trata los trastornos del sistema nervioso",
+  "createdAt": "2026-03-09T17:00:00.000Z"
+}
+```
+
+## Error Responses
+
+### Unauthorized (Missing Token)
+
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized"
+}
+```
+
+### Forbidden (Not Admin)
+
+```json
+{
+  "statusCode": 403,
+  "message": "Forbidden resource",
+  "error": "Forbidden"
+}
+```
+
+### Missing Required Field
+
+```json
+{
+  "statusCode": 400,
+  "message": "nombre is required",
+  "error": "Bad Request"
+}
+```
+
+### Duplicate Specialty
+
+```json
+{
+  "statusCode": 409,
+  "message": "Specialty with this name already exists",
+  "error": "Conflict"
+}
+```
+
+## Additional Admin Endpoints
+
+### Assign Specialty to Establishment
+
+```bash
+POST /especialidades/asignar
+Authorization: Bearer <admin_jwt_token>
+Content-Type: application/json
+
+{
+  "establecimientoId": 45,
+  "especialidadId": 8,
+  "horariosDisponibles": "Lunes a Viernes 9:00-17:00"
+}
+```
+
+### Remove Specialty from Establishment
+
+```bash
+DELETE /especialidades/establecimiento/45/8
+Authorization: Bearer <admin_jwt_token>
+```
+
+These endpoints allow administrators to manage which specialties are offered at each healthcare establishment.

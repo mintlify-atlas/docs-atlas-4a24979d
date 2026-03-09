@@ -1,0 +1,525 @@
+---
+title: 'Offline Mode'
+description: 'Download map tiles and facility data for offline access using IndexedDB'
+icon: 'download'
+---
+
+## Overview
+
+SaludMap's offline mode allows users to download map tiles and facility data for specific areas, enabling full functionality without an internet connection. This is essential for users in areas with poor connectivity or for conserving mobile data.
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Tile Caching" icon="map">
+    Download OpenStreetMap tiles at multiple zoom levels
+  </Card>
+  <Card title="Facility Data" icon="hospital">
+    Cache healthcare facility information locally
+  </Card>
+  <Card title="IndexedDB Storage" icon="database">
+    Efficient browser-based storage for offline data
+  </Card>
+  <Card title="Progress Tracking" icon="spinner">
+    Real-time download progress indicators
+  </Card>
+</CardGroup>
+
+## Architecture
+
+### OfflineTileService
+
+The core service manages tile downloads and caching:
+
+```jsx offlineTileService.js
+class OfflineTileService {
+  constructor() {
+    this.isDownloading = false;
+    this.downloadProgress = 0;
+    this.onProgress = null;
+  }
+
+  async downloadTilesForArea(center, zoomLevels = [12, 13, 14, 15], radius = 0.02) {
+    if (this.isDownloading) return;
+
+    this.isDownloading = true;
+    this.downloadProgress = 0;
+
+    const tiles = this.calculateTilesForArea(center, zoomLevels, radius);
+    const totalTiles = tiles.length;
+    let downloadedCount = 0;
+
+    for (const tile of tiles) {
+      try {
+        await this.downloadSingleTile(tile);
+        downloadedCount++;
+        this.downloadProgress = (downloadedCount / totalTiles) * 100;
+
+        if (this.onProgress) {
+          this.onProgress(this.downloadProgress, downloadedCount, totalTiles);
+        }
+
+        // Pause to avoid overloading server
+        if (downloadedCount % 10 === 0) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      } catch (error) {
+        console.warn(`Error downloading tile ${tile.url}:`, error);
+      }
+    }
+
+    this.isDownloading = false;
+    this.downloadProgress = 100;
+
+    // Clean up old tiles
+    await cleanOldTiles();
+  }
+}
+```
+
+<Info>
+The service is implemented as a singleton to prevent multiple concurrent downloads.
+</Info>
+
+## Tile Calculation
+
+### Calculating Tile Bounds
+
+The service calculates which tiles to download based on geographic coordinates:
+
+```jsx
+calculateTileBounds(center, radius, zoom) {
+  const n = Math.pow(2, zoom);
+
+  // Convert lat/lng to tile numbers
+  const centerTileX = Math.floor(((center.lng + 180) / 360) * n);
+  const centerTileY = Math.floor(
+    (1 - Math.log(Math.tan((center.lat * Math.PI) / 180) + 
+      1 / Math.cos((center.lat * Math.PI) / 180)) / Math.PI) / 2 * n
+  );
+
+  // Calculate how many tiles needed in each direction
+  const tileRadius = Math.ceil(
+    (radius * n) / 360 * Math.cos((center.lat * Math.PI) / 180)
+  );
+
+  return {
+    minX: Math.max(0, centerTileX - tileRadius),
+    maxX: Math.min(n - 1, centerTileX + tileRadius),
+    minY: Math.max(0, centerTileY - tileRadius),
+    maxY: Math.min(n - 1, centerTileY + tileRadius)
+  };
+}
+```
+
+### Generating Tile List
+
+All tiles within the bounds are added to the download queue:
+
+```jsx
+calculateTilesForArea(center, zoomLevels, radius) {
+  const tiles = [];
+
+  for (const zoom of zoomLevels) {
+    const bounds = this.calculateTileBounds(center, radius, zoom);
+
+    for (let x = bounds.minX; x <= bounds.maxX; x++) {
+      for (let y = bounds.minY; y <= bounds.maxY; y++) {
+        const url = `https://a.tile.openstreetmap.org/${zoom}/${x}/${y}.png`;
+        tiles.push({ url, z: zoom, x, y });
+      }
+    }
+  }
+
+  return tiles;
+}
+```
+
+<Warning>
+Downloading large areas with high zoom levels can result in thousands of tiles. Be mindful of storage space and download times.
+</Warning>
+
+## Downloading Tiles
+
+### Individual Tile Download
+
+Each tile is fetched and saved to IndexedDB:
+
+```jsx
+async downloadSingleTile(tile) {
+  try {
+    const response = await fetch(tile.url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const blob = await response.blob();
+    await saveTile(tile.url, blob, tile.z, tile.x, tile.y);
+  } catch (error) {
+    throw new Error(`Error downloading ${tile.url}: ${error.message}`);
+  }
+}
+```
+
+### Progress Callback
+
+Download progress is reported via a callback:
+
+```jsx
+setProgressCallback(callback) {
+  this.onProgress = callback;
+}
+
+// In Map component
+offlineTileService.setProgressCallback(setDownloadProgress);
+```
+
+## IndexedDB Storage
+
+### Database Schema
+
+Tiles and facility data are stored in IndexedDB:
+
+```jsx db.js
+const DB_NAME = 'SaludMapDB';
+const DB_VERSION = 3;
+
+const openDB = () => {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      
+      // Tiles store
+      if (!db.objectStoreNames.contains('tiles')) {
+        const tileStore = db.createObjectStore('tiles', { keyPath: 'url' });
+        tileStore.createIndex('timestamp', 'timestamp');
+      }
+      
+      // Places store
+      if (!db.objectStoreNames.contains('places')) {
+        const placesStore = db.createObjectStore('places', { keyPath: 'id', autoIncrement: true });
+        placesStore.createIndex('lat_lng', ['lat', 'lng']);
+      }
+    };
+    
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+};
+```
+
+### Saving Tiles
+
+Tiles are stored as blobs with metadata:
+
+```jsx
+export const saveTile = async (url, blob, z, x, y) => {
+  const db = await openDB();
+  const transaction = db.transaction(['tiles'], 'readwrite');
+  const store = transaction.objectStore('tiles');
+  
+  await store.put({
+    url,
+    blob,
+    z,
+    x,
+    y,
+    timestamp: Date.now()
+  });
+};
+```
+
+### Retrieving Tiles
+
+Cached tiles are retrieved for offline use:
+
+```jsx
+export const getTile = async (url) => {
+  const db = await openDB();
+  const transaction = db.transaction(['tiles'], 'readonly');
+  const store = transaction.objectStore('tiles');
+  
+  const result = await store.get(url);
+  return result?.blob || null;
+};
+```
+
+## Facility Data Caching
+
+### Saving Places
+
+Facility data is cached alongside tiles:
+
+```jsx
+export const savePlaces = async (places) => {
+  const db = await openDB();
+  const transaction = db.transaction(['places'], 'readwrite');
+  const store = transaction.objectStore('places');
+  
+  for (const place of places) {
+    await store.put({
+      ...place,
+      timestamp: Date.now()
+    });
+  }
+};
+```
+
+### Querying Nearby Places
+
+Offline queries search the local database:
+
+```jsx
+export const getNearbyPlaces = async (location, radius = 0.05) => {
+  const db = await openDB();
+  const transaction = db.transaction(['places'], 'readonly');
+  const store = transaction.objectStore('places');
+  
+  const allPlaces = await store.getAll();
+  
+  // Filter by distance
+  return allPlaces.filter(place => {
+    const distance = Math.sqrt(
+      Math.pow(place.lat - location.lat, 2) + 
+      Math.pow(place.lng - location.lng, 2)
+    );
+    return distance <= radius;
+  });
+};
+```
+
+## User Interface
+
+### Download Button
+
+Users initiate downloads from the map interface:
+
+```jsx Map.jsx
+const handleDownloadOffline = async () => {
+  if (!currentLocation) return;
+  
+  try {
+    setShowStatus(true);
+    setStatusMessage('Descargando área...');
+    
+    await offlineTileService.downloadTilesForArea(currentLocation);
+    
+    toast.success('Área descargada para uso offline');
+  } catch (error) {
+    toast.error('Error descargando área offline: ' + error.message);
+  } finally {
+    setShowStatus(false);
+  }
+};
+```
+
+### Progress Display
+
+Download progress is shown in a status overlay:
+
+```jsx
+<div className={`status-overlay ${showStatus ? 'show' : ''}`}>
+  {statusMessage}
+</div>
+
+{downloadProgress > 0 && downloadProgress < 100 && (
+  <div className="progress-bar">
+    <div 
+      className="progress-fill" 
+      style={{ width: `${downloadProgress}%` }}
+    />
+    <span>{Math.round(downloadProgress)}%</span>
+  </div>
+)}
+```
+
+<Frame>
+  <img src="/images/download-progress.png" alt="Download progress indicator" />
+</Frame>
+
+## Offline Detection
+
+### Network Status
+
+The app monitors online/offline status:
+
+```jsx
+const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+useEffect(() => {
+  const handleOnline = () => setIsOnline(true);
+  const handleOffline = () => setIsOnline(false);
+  
+  window.addEventListener('online', handleOnline);
+  window.addEventListener('offline', handleOffline);
+  
+  return () => {
+    window.removeEventListener('online', handleOnline);
+    window.removeEventListener('offline', handleOffline);
+  };
+}, []);
+```
+
+### Offline Badge
+
+A badge indicates offline mode:
+
+```jsx
+{!isOnline && (
+  <div className="offline-badge">
+    {t('map.offline', '(Offline)')}
+  </div>
+)}
+```
+
+## Fallback Behavior
+
+### Graceful Degradation
+
+The app automatically falls back to cached data when offline:
+
+```jsx
+const fetchNearbyPlaces = async (location) => {
+  try {
+    let places = [];
+    
+    if (isOnline) {
+      try {
+        // Try API first
+        const response = await axios.get(`/api/places?lat=${location.lat}&lng=${location.lng}`);
+        places = normalizeApiResponse(response.data);
+        
+        // Cache successful response
+        if (places.length > 0) await savePlaces(places);
+        setOfflineMode(false);
+      } catch {
+        // Fall back to cached data
+        places = await getNearbyPlaces(location);
+        setOfflineMode(true);
+      }
+    } else {
+      // Use cached data when offline
+      places = await getNearbyPlaces(location);
+      setOfflineMode(true);
+    }
+    
+    setLugares(places);
+  } catch (error) {
+    // Final fallback
+    const cachedPlaces = await getNearbyPlaces(location);
+    if (cachedPlaces.length > 0) {
+      setLugares(cachedPlaces);
+      setOfflineMode(true);
+      toast.info('Modo offline: mostrando lugares guardados');
+    } else {
+      toast.error('Error de conexión y sin datos offline disponibles');
+    }
+  }
+};
+```
+
+## Storage Management
+
+### Cleaning Old Tiles
+
+Old tiles are automatically cleaned to free up space:
+
+```jsx
+export const cleanOldTiles = async (maxAge = 30 * 24 * 60 * 60 * 1000) => {
+  const db = await openDB();
+  const transaction = db.transaction(['tiles'], 'readwrite');
+  const store = transaction.objectStore('tiles');
+  
+  const now = Date.now();
+  const allTiles = await store.getAll();
+  
+  for (const tile of allTiles) {
+    if (now - tile.timestamp > maxAge) {
+      await store.delete(tile.url);
+    }
+  }
+};
+```
+
+<Info>
+By default, tiles older than 30 days are automatically deleted.
+</Info>
+
+### Storage Statistics
+
+Check storage usage:
+
+```jsx
+const getStorageStats = async () => {
+  if ('storage' in navigator && 'estimate' in navigator.storage) {
+    const estimate = await navigator.storage.estimate();
+    return {
+      usage: estimate.usage,
+      quota: estimate.quota,
+      percentUsed: (estimate.usage / estimate.quota) * 100
+    };
+  }
+};
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Download During WiFi">
+    Encourage users to download areas while connected to WiFi to conserve mobile data.
+  </Accordion>
+  
+  <Accordion title="Limit Zoom Levels">
+    Downloading too many zoom levels exponentially increases tile count. Focus on essential zoom levels (12-15).
+  </Accordion>
+  
+  <Accordion title="Gradual Updates">
+    Add small delays between tile downloads to avoid overwhelming the tile server.
+  </Accordion>
+  
+  <Accordion title="Storage Limits">
+    Monitor storage usage and warn users when approaching browser storage limits.
+  </Accordion>
+</AccordionGroup>
+
+## Limitations
+
+<Warning>
+- **Browser Storage**: Limited by browser quota (typically 50MB-10GB)
+- **Tile Server Load**: Downloading too quickly may trigger rate limits
+- **Data Freshness**: Offline data becomes outdated over time
+- **Battery Impact**: Large downloads can drain battery on mobile devices
+</Warning>
+
+## Related Features
+
+<CardGroup cols={2}>
+  <Card title="Map Search" icon="map" href="/features/map-search">
+    Interactive map with offline support
+  </Card>
+  <Card title="Saved Locations" icon="bookmark" href="/features/map-search#saved-locations">
+    Save locations for offline access
+  </Card>
+</CardGroup>
+
+## Technical Details
+
+### Zoom Level Coverage
+
+| Zoom Level | Tile Coverage | Use Case |
+|------------|---------------|----------|
+| 12 | Wide area | City overview |
+| 13 | Neighborhood | District navigation |
+| 14 | Local area | Street details |
+| 15 | Close-up | Building-level |
+
+### Storage Estimates
+
+Typical storage requirements:
+- **Single tile**: ~10-30 KB
+- **0.02° radius at zoom 12-15**: ~500-2000 tiles (5-60 MB)
+- **Facility data**: ~1-5 KB per facility
+
+<Tip>
+For optimal offline experience, download areas at zoom levels 13-15 for a 0.02° radius (approximately 2-3 km).
+</Tip>

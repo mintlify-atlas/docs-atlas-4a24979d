@@ -1,0 +1,95 @@
+---
+title: 'List Specialties'
+api: 'GET /especialidades'
+---
+
+Retrieves a list of all medical specialties available in the system. This is a public endpoint that does not require authentication.
+
+## Response
+
+<ResponseField name="specialties" type="array">
+  Array of specialty objects
+  
+  <ResponseField name="id" type="number">
+    The unique identifier for the specialty
+  </ResponseField>
+  
+  <ResponseField name="nombre" type="string">
+    The name of the medical specialty
+  </ResponseField>
+  
+  <ResponseField name="descripcion" type="string">
+    A description of the specialty (optional)
+  </ResponseField>
+  
+  <ResponseField name="createdAt" type="string">
+    Timestamp when the specialty was created
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+```bash
+GET /especialidades
+```
+
+## Example Response
+
+```json
+[
+  {
+    "id": 1,
+    "nombre": "Cardiología",
+    "descripcion": "Especialidad médica que se ocupa de las enfermedades del corazón y del aparato circulatorio",
+    "createdAt": "2026-01-15T10:00:00.000Z"
+  },
+  {
+    "id": 2,
+    "nombre": "Dermatología",
+    "descripcion": "Especialidad médica que se ocupa del estudio de la piel y sus enfermedades",
+    "createdAt": "2026-01-15T10:00:00.000Z"
+  },
+  {
+    "id": 3,
+    "nombre": "Pediatría",
+    "descripcion": "Especialidad médica que se ocupa de la salud y las enfermedades de los niños",
+    "createdAt": "2026-01-15T10:00:00.000Z"
+  },
+  {
+    "id": 4,
+    "nombre": "Traumatología",
+    "descripcion": "Especialidad médica que se dedica al estudio de las lesiones del sistema musculoesquelético",
+    "createdAt": "2026-01-15T10:00:00.000Z"
+  },
+  {
+    "id": 5,
+    "nombre": "Oftalmología",
+    "descripcion": "Especialidad médica que estudia las enfermedades de los ojos",
+    "createdAt": "2026-01-15T10:00:00.000Z"
+  },
+  {
+    "id": 6,
+    "nombre": "Odontología",
+    "descripcion": "Especialidad que se ocupa del diagnóstico, tratamiento y prevención de las enfermedades del aparato estomatognático",
+    "createdAt": "2026-01-15T10:00:00.000Z"
+  },
+  {
+    "id": 7,
+    "nombre": "Veterinaria",
+    "descripcion": "Especialidad que se ocupa de la prevención, diagnóstico y tratamiento de enfermedades en animales",
+    "createdAt": "2026-01-15T10:00:00.000Z"
+  }
+]
+```
+
+## Use Cases
+
+- Populate specialty dropdown menus in appointment booking forms
+- Display available medical specialties to users
+- Filter establishments by specialty
+- Create specialty-specific search features
+
+## Related Endpoints
+
+- [Get Specialties by Establishment](/api/specialties/list#by-establishment) - Get specialties offered at a specific establishment
+- [Create Specialty](/api/specialties/create) - Create a new specialty (admin only)

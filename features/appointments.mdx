@@ -1,0 +1,468 @@
+---
+title: 'Appointment Booking'
+description: 'Request and manage healthcare appointments (turnos) with specialty-based scheduling'
+icon: 'calendar-check'
+---
+
+## Overview
+
+The appointment booking system ("Turnos" in Spanish) allows authenticated users to request appointments at healthcare facilities. It features specialty search, visual calendar selection, and email confirmation.
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Specialty Search" icon="search">
+    Find facilities by medical specialty and book directly
+  </Card>
+  <Card title="Visual Calendar" icon="calendar-days">
+    Select dates and times with an interactive calendar interface
+  </Card>
+  <Card title="Email Notifications" icon="envelope">
+    Automatic confirmation emails sent via EmailJS
+  </Card>
+  <Card title="Appointment History" icon="clock-rotate-left">
+    View and manage all your scheduled appointments
+  </Card>
+</CardGroup>
+
+## Authentication Required
+
+<Warning>
+Users must be logged in to access the appointment booking system. Unauthenticated users see a login prompt.
+</Warning>
+
+```jsx Turnos.jsx
+if (!user) {
+  return (
+    <div className="turnos-auth-required">
+      <span className="auth-lock-emoji">🔒</span>
+      <h3>Autenticación Requerida</h3>
+      <p>Debés iniciar sesión para ver y solicitar turnos médicos.</p>
+      <button onClick={() => setShowAuthModal(true)}>
+        Iniciar Sesión
+      </button>
+    </div>
+  );
+}
+```
+
+## Specialty Search
+
+### Finding Facilities by Specialty
+
+The `BuscadorEspecialidades` component allows users to search for facilities offering specific medical specialties:
+
+```jsx
+<BuscadorEspecialidades
+  onSeleccionarEstablecimiento={handleSeleccionarDesdeBuscador}
+/>
+```
+
+When a user selects a facility-specialty combination, the appointment modal opens with the specialty pre-selected:
+
+```jsx
+const handleSeleccionarDesdeBuscador = async (estData, especialidad) => {
+  const establecimiento = {
+    id: estData.id,
+    nombre: estData.nombre,
+    tipo: estData.tipo,
+    direccion: estData.direccion,
+    lat: estData.lat,
+    lng: estData.lng,
+  };
+  
+  setEspecialidadPreseleccionada(especialidad || null);
+  await openModal(place, establecimiento);
+};
+```
+
+## Booking Flow
+
+<Steps>
+  <Step title="Select Facility">
+    Choose a healthcare facility from the map or specialty search
+  </Step>
+  <Step title="Choose Specialty">
+    Pick a medical specialty from available options at the facility
+  </Step>
+  <Step title="Select Date">
+    Use the visual calendar to choose an available date
+  </Step>
+  <Step title="Pick Time">
+    Select from 15-minute time slots based on specialty hours
+  </Step>
+  <Step title="Add Notes">
+    Optional: Add observations or special requests
+  </Step>
+  <Step title="Confirm">
+    Review details and confirm the appointment
+  </Step>
+</Steps>
+
+## Appointment Modal
+
+### Specialty Selection
+
+The modal loads available specialties for the selected facility:
+
+```jsx TurnoModal2.jsx
+const [especialidades, setEspecialidades] = useState([]);
+const [especialidadSeleccionada, setEspecialidadSeleccionada] = useState(null);
+
+useEffect(() => {
+  if (!modalOpen || !selected?.establecimientoId) return;
+  
+  getEspecialidadesByEstablecimiento(selected.establecimientoId)
+    .then(data => {
+      setEspecialidades(data);
+    });
+}, [modalOpen, selected?.establecimientoId]);
+```
+
+<Frame>
+  <img src="/images/specialty-selector.png" alt="Specialty dropdown" />
+</Frame>
+
+### Custom Dropdown Component
+
+The specialty selector is a custom component that pushes content down (no absolute positioning):
+
+```jsx
+function SelectorEspecialidades({ especialidades, seleccionada, onChange }) {
+  const [abierto, setAbierto] = useState(false);
+
+  return (
+    <div className="esp-selector">
+      <button 
+        className="esp-selector__trigger" 
+        onClick={() => setAbierto(v => !v)}
+      >
+        <span>{seleccionada ? seleccionada.nombre : '-- Seleccioná una especialidad --'}</span>
+      </button>
+
+      {abierto && (
+        <div className="esp-selector__panel">
+          <ul>
+            {especialidades.map(esp => (
+              <li onClick={() => { onChange(esp); setAbierto(false); }}>
+                {esp.nombre}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+## Schedule Parser
+
+### Parsing Opening Hours
+
+The system parses natural language schedule strings from the database:
+
+```jsx
+const parsearHorarios = (horariosStr) => {
+  // Example input: "Lunes a Viernes: 09:00 a 17:00 | Sábados: 09:00 a 13:00"
+  const diasPermitidos = new Set();
+  const franjas = [];
+  
+  const bloques = horariosStr.split(/[|\/]/);
+  
+  for (const bloque of bloques) {
+    // Extract time range: "09:00 a 17:00"
+    const horas = [...bloque.matchAll(/\d{1,2}:\d{2}/g)];
+    const desde = horas[0];
+    const hasta = horas[1];
+    
+    // Parse day names: "Lunes a Viernes"
+    const diasBloque = extractDaysFromText(bloque);
+    
+    franjas.push({ dias: diasBloque, desde, hasta });
+  }
+  
+  return { diasPermitidos, franjas };
+};
+```
+
+<Info>
+The parser supports Spanish day names with and without accents, ranges ("Lunes a Viernes"), and multiple time blocks.
+</Info>
+
+### Generating Time Slots
+
+Once a date is selected, 15-minute time slots are generated based on the specialty's hours:
+
+```jsx
+const generarSlots = (franjas, fecha) => {
+  const diaSemana = fecha.getDay();
+  const slots = [];
+  
+  for (const franja of franjas) {
+    if (!franja.dias.has(diaSemana)) continue;
+    
+    const [hI, mI] = franja.desde.split(':').map(Number);
+    const [hF, mF] = franja.hasta.split(':').map(Number);
+    
+    let min = hI * 60 + mI;
+    const finMin = hF * 60 + mF;
+    
+    while (min < finMin) {
+      slots.push(
+        `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`
+      );
+      min += 15; // 15-minute intervals
+    }
+  }
+  
+  return slots;
+};
+```
+
+## Visual Calendar
+
+### CalendarioVisual Component
+
+The calendar displays available days based on parsed schedules:
+
+```jsx
+function CalendarioVisual({ diasPermitidos, fechaSeleccionada, onSeleccionarFecha }) {
+  const [anio, setAnio] = useState(new Date().getFullYear());
+  const [mes, setMes] = useState(new Date().getMonth());
+  
+  return (
+    <div className="calendario">
+      <div className="calendario__nav">
+        <button onClick={irAnterior}>‹</button>
+        <span>{NOMBRES_MES[mes]} {anio}</span>
+        <button onClick={irSiguiente}>›</button>
+      </div>
+      
+      <div className="calendario__grilla">
+        {NOMBRES_DIA.map(d => <div className="calendario__cabecera">{d}</div>)}
+        
+        {celdas.map(fecha => {
+          const esDisponible = !esPasado && diasPermitidos.has(fecha.getDay());
+          return (
+            <button
+              disabled={!esDisponible}
+              onClick={() => onSeleccionarFecha(fecha)}
+            >
+              {fecha.getDate()}
+            </button>
+          );
+        })}
+      </div>
+      
+      <div className="calendario__leyenda">
+        <span className="leyenda__item--disponible">Disponible</span>
+        <span className="leyenda__item--seleccionado">Seleccionado</span>
+        <span className="leyenda__item--no-disponible">Sin atención</span>
+      </div>
+    </div>
+  );
+}
+```
+
+<Frame>
+  <img src="/images/calendar-view.png" alt="Visual calendar" />
+</Frame>
+
+## Saving Appointments
+
+### Backend Integration
+
+Appointments are saved to the database with all relevant details:
+
+```jsx
+const handleSolicitarTurno = async (datos) => {
+  const turnoGuardado = await guardarTurno({
+    usuarioId: user.id,
+    establecimientoId: datos.establecimientoId,
+    especialidadId: datos.especialidadId,
+    fecha: datos.fecha,
+    hora: datos.hora,
+    observaciones: datos.observaciones
+  });
+  
+  // Send confirmation email
+  await sendAppointmentEmail(
+    selected,
+    `${datos.fecha}T${datos.hora}`,
+    datos.observaciones,
+    user.mail,
+    `${user.nombre} ${user.apellido}`,
+    selectedType,
+    prettyType,
+    datos.especialidadNombre
+  );
+  
+  toast.success('Turno solicitado exitosamente');
+};
+```
+
+### Email Confirmation
+
+Confirmation emails are sent using EmailJS:
+
+```jsx emailService.js
+export const sendAppointmentEmail = async (
+  professional,
+  datetime,
+  notes,
+  userEmail,
+  userName,
+  professionalType,
+  prettyType,
+  especialidadNombre
+) => {
+  const templateParams = {
+    to_email: userEmail,
+    user_name: userName,
+    professional_name: professional.name,
+    professional_type: prettyType(professionalType),
+    especialidad: especialidadNombre || 'No especificada',
+    date: new Date(datetime).toLocaleDateString('es-AR'),
+    time: datetime.split('T')[1],
+    notes: notes || 'Sin observaciones',
+  };
+  
+  return emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams);
+};
+```
+
+## Managing Appointments
+
+### My Appointments List
+
+Users can view all their scheduled appointments:
+
+```jsx MisTurnosList2.jsx
+<MisTurnosList
+  misTurnos={misTurnos}
+  onCancelTurno={handleCancelarTurno}
+  cancellingId={cancellingId}
+  prettyType={prettyType}
+/>
+```
+
+Appointments display:
+- Facility name and type
+- Selected specialty
+- Date and time
+- Status (pendiente, confirmado, cancelado)
+- Cancel button
+
+### Canceling Appointments
+
+Users can cancel appointments with a confirmation dialog:
+
+```jsx
+const handleCancelarTurno = async (id) => {
+  toast('¿Estás seguro que querés cancelar este turno?', {
+    duration: 8000,
+    action: {
+      label: 'Sí, cancelar',
+      onClick: () => cancelarTurno(id),
+    },
+    cancel: { label: 'No' },
+  });
+};
+
+const cancelarTurno = async (turnoId) => {
+  const res = await cancelAppointment(turnoId);
+  setMisTurnos(prev => prev.filter(t => t.id !== turnoId));
+  toast.success('Turno cancelado exitosamente');
+};
+```
+
+## Cost Comparator
+
+The system includes a cost comparison tool for different facilities:
+
+```jsx
+<button onClick={() => setShowCostComparator(true)}>
+  Comparar costos
+</button>
+
+{showCostComparator && (
+  <CostComparator 
+    places={lugares} 
+    onClose={() => setShowCostComparator(false)} 
+  />
+)}
+```
+
+## Integration with Map
+
+### Booking from Map Markers
+
+Users can initiate appointment booking directly from facility markers on the map:
+
+```jsx
+// Event listener in Turnos component
+useEffect(() => {
+  const handleChangeTab = (e) => {
+    if (e.detail?.tab !== 'turnos') return;
+    
+    const { establecimiento, place } = e.detail;
+    setPreSelectedEstablecimiento(establecimiento);
+    setPreSelectedPlace(place);
+    
+    setTimeout(() => openModal(place, establecimiento), 100);
+  };
+  
+  window.addEventListener('saludmap:change-tab', handleChangeTab);
+}, []);
+```
+
+## Internationalization
+
+All appointment-related text supports multiple languages via i18next:
+
+```jsx
+const { t } = useTranslation();
+
+<h3>{t('appointments.requestAppointments')}</h3>
+<label>{t('appointments.observations')}</label>
+<button>{t('appointments.confirmAppointment')}</button>
+```
+
+## Related Features
+
+<CardGroup cols={2}>
+  <Card title="Map Search" icon="map" href="/features/map-search">
+    Find healthcare facilities on the map
+  </Card>
+  <Card title="Reviews" icon="star" href="/features/reviews">
+    Leave reviews after appointments
+  </Card>
+  <Card title="Chatbot" icon="robot" href="/features/chatbot">
+    Get help with appointment booking
+  </Card>
+</CardGroup>
+
+## Technical Details
+
+### Services Used
+
+- `turnosService.js`: Manages appointment data and API calls
+- `especialidadesService.js`: Fetches specialties by facility
+- `emailService.js`: Sends confirmation emails via EmailJS
+- `establecimientosService.js`: Handles facility data
+
+### State Management
+
+```jsx
+const [modalOpen, setModalOpen] = useState(false);
+const [selected, setSelected] = useState(null);
+const [especialidadSeleccionada, setEspecialidadSeleccionada] = useState(null);
+const [fechaSeleccionada, setFechaSeleccionada] = useState(null);
+const [horaSeleccionada, setHoraSeleccionada] = useState('');
+const [misTurnos, setMisTurnos] = useState([]);
+```
+
+<Tip>
+Appointment data is sorted by date in descending order, showing the most recent appointments first.
+</Tip>

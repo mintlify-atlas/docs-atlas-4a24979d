@@ -1,0 +1,623 @@
+---
+title: Frontend Structure
+description: Organization and architecture of the SaludMap frontend
+---
+
+## Overview
+
+The SaludMap frontend is built with React 19.1.1, Vite 7.1.7, and uses modern React patterns including hooks, context, and functional components. The codebase is organized by feature with shared utilities and services.
+
+**Location**: `Frontend/src/`
+
+## Directory Structure
+
+```
+Frontend/src/
+├── api/                      # API client services
+│   └── chatbotService.js     # Chatbot API integration
+├── assets/                   # Static assets (images, logos)
+├── components/               # React components
+│   ├── Analytics/            # Analytics dashboard
+│   │   └── Analytics.jsx
+│   ├── Auth/                 # Authentication components
+│   │   ├── AuthContext.jsx
+│   │   ├── ModalAuth.jsx
+│   │   └── services/
+│   │       ├── authService.js
+│   │       └── turnosService.js
+│   ├── CardsSegure/          # Insurance section
+│   │   └── InsuranceSection.jsx
+│   ├── Resenias/             # Review system
+│   │   ├── CrearResenia.jsx
+│   │   └── Resenias.jsx
+│   ├── turnos/               # Appointment management
+│   │   ├── BuscadorEspecialidades.jsx
+│   │   ├── CostComparator.jsx
+│   │   ├── MisTurnosList2.jsx
+│   │   ├── ProfesionalesList2.jsx
+│   │   ├── TurnoModal2.jsx
+│   │   └── Turnos.jsx
+│   ├── ChatbotWidget.jsx     # AI chatbot widget
+│   ├── EmergencyWidget.jsx   # Emergency services
+│   ├── EstablishmentInfo.jsx # Establishment details
+│   ├── LanguageSelector.jsx  # Language switcher
+│   ├── Map.jsx               # Main map component
+│   ├── MapComponents.jsx     # Map utilities
+│   ├── OfflineTileLayer.jsx  # Offline map tiles
+│   ├── SaveLocationModal.jsx # Save location dialog
+│   └── SavedLocationsList.jsx # Saved locations list
+├── config/                   # Configuration files
+│   └── api.js                # API base URL configuration
+├── context/                  # React Context providers
+├── data/                     # Static data files
+├── hooks/                    # Custom React hooks
+├── i18n/                     # Internationalization
+│   ├── locales/              # Translation files
+│   └── index.js              # i18next configuration
+├── services/                 # Business logic services
+│   ├── db.js                 # IndexedDB operations
+│   └── locationService.js    # Geolocation handling
+├── styles/                   # CSS files
+│   └── modal-light-overrides.css
+├── utils/                    # Utility functions
+│   └── tutorial.js           # Tutorial system
+├── App.jsx                   # Main app component
+├── AppWrapper.jsx            # App wrapper with providers
+└── main.jsx                  # Application entry point
+```
+
+## Core Components
+
+### App.jsx
+
+Main application component that manages:
+- Navigation state
+- Theme switching (dark/light mode)
+- User authentication state
+- Tab routing (Map, Appointments, Insurance)
+- Mobile menu handling
+
+**Key Features**:
+- Tab-based navigation system
+- Responsive navbar with mobile hamburger menu
+- Theme persistence in localStorage
+- Location tracking integration
+
+```jsx
+// Main sections rendered based on activeTab
+const renderActiveSection = () => {
+  switch (activeTab) {
+    case 'mapa':      return <MapComponent />;
+    case 'analytics': return <Analytics />;
+    case 'turnos':    return <Turnos />;
+    case 'seguros':   return <InsuranceSection />;
+  }
+};
+```
+
+**Location**: `App.jsx:1`
+
+---
+
+### Map Components
+
+#### Map.jsx
+
+Core map component using React Leaflet:
+- Renders Leaflet map with custom markers
+- Handles establishment filtering
+- Manages map interactions (zoom, pan, click)
+- Integrates with location service
+- Supports offline tile caching
+
+**Features**:
+- Custom marker clustering
+- Establishment type filtering
+- Real-time geolocation tracking
+- Offline mode support
+- Saved locations
+- Manual location selection
+
+**Location**: `components/Map.jsx:1`
+
+#### OfflineTileLayer.jsx
+
+Custom tile layer for offline map support:
+- Caches map tiles in IndexedDB
+- Falls back to online tiles when offline cache unavailable
+- Allows downloading map areas for offline use
+
+**Location**: `components/OfflineTileLayer.jsx:1`
+
+---
+
+### Authentication System
+
+#### AuthContext.jsx
+
+React Context provider for authentication state:
+- Manages user session
+- Provides login/logout functions
+- Persists authentication token
+- Exposes user data to components
+
+```jsx
+const { user, login, logout } = useAuth();
+```
+
+**Location**: `components/Auth/AuthContext.jsx:1`
+
+#### ModalAuth.jsx
+
+Authentication modal component:
+- Login form
+- Registration form
+- Form validation
+- Error handling
+- Toggle between login/register views
+
+**Location**: `components/Auth/ModalAuth.jsx:1`
+
+#### authService.js
+
+Authentication API service:
+- `login(email, password)` - Authenticate user
+- `register(userData)` - Create new account
+- `logout()` - Clear session
+- Token management
+
+**Location**: `components/Auth/services/authService.js:1`
+
+---
+
+### Appointment System (Turnos)
+
+#### Turnos.jsx
+
+Main appointments management component:
+- View user's appointments
+- Book new appointments
+- Filter by specialty
+- Search establishments
+
+**Location**: `components/turnos/Turnos.jsx:1`
+
+#### TurnoModal2.jsx
+
+Appointment booking modal:
+- Select establishment
+- Choose specialty
+- Pick date and time
+- Submit appointment request
+
+**Location**: `components/turnos/TurnoModal2.jsx:1`
+
+#### MisTurnosList2.jsx
+
+User's appointments list:
+- Display past and upcoming appointments
+- Show appointment status
+- Option to cancel appointments
+- Link to write reviews
+
+**Location**: `components/turnos/MisTurnosList2.jsx:1`
+
+#### BuscadorEspecialidades.jsx
+
+Specialty search and filter component:
+- Search specialties by name
+- Filter establishments by specialty
+- Display available specialties
+
+**Location**: `components/turnos/BuscadorEspecialidades.jsx:1`
+
+---
+
+### Review System (Reseñas)
+
+#### Resenias.jsx
+
+Display reviews for an establishment:
+- List all reviews
+- Show ratings and comments
+- User information
+- Date posted
+
+**Location**: `components/Resenias/Resenias.jsx:1`
+
+#### CrearResenia.jsx
+
+Create review form:
+- Rating input (1-5 stars)
+- Comment text area
+- Submit review
+- Link to appointment
+
+**Location**: `components/Resenias/CrearResenia.jsx:1`
+
+---
+
+### Analytics Dashboard
+
+#### Analytics.jsx
+
+Establishment analytics visualization:
+- Appointment statistics
+- Review metrics
+- Rating distribution
+- Chart.js graphs
+
+**Location**: `components/Analytics/Analytics.jsx:1`
+
+---
+
+### Chatbot System
+
+#### ChatbotWidget.jsx
+
+AI chatbot interface:
+- Floating chat widget
+- Gemini AI integration
+- Context-aware responses
+- Medical information assistance
+- Expandable/collapsible UI
+
+**Location**: `components/ChatbotWidget.jsx:1`
+
+#### chatbotService.js
+
+Chatbot API client:
+- `sendMessage(message, history)` - Send chat message
+- Manages conversation history
+- Handles AI responses
+
+**Location**: `api/chatbotService.js:1`
+
+---
+
+### Other Key Components
+
+#### LanguageSelector.jsx
+
+Language switching component:
+- Toggle between languages (ES/EN)
+- Updates i18next configuration
+- Persists language preference
+
+**Location**: `components/LanguageSelector.jsx:1`
+
+#### EmergencyWidget.jsx
+
+Quick access to emergency services:
+- Display emergency contact numbers
+- One-click calling
+- Important medical information
+
+**Location**: `components/EmergencyWidget.jsx:1`
+
+#### InsuranceSection.jsx
+
+Health insurance information:
+- List supported insurance providers
+- Coverage details
+- Contact information
+
+**Location**: `components/CardsSegure/InsuranceSection.jsx:1`
+
+---
+
+## Services Layer
+
+### locationService.js
+
+Geolocation management service:
+
+```javascript
+class LocationService {
+  getCurrentPosition()     // Get current GPS location
+  subscribe(callback)      // Listen to location changes
+  updateLocation(lat, lng) // Manually set location
+  loadLastKnownLocation()  // Load from localStorage
+}
+```
+
+**Features**:
+- Real-time location tracking
+- Observable pattern for location updates
+- Manual location override
+- Persistent location storage
+- GPS vs manual source tracking
+
+**Location**: `services/locationService.js:1`
+
+---
+
+### db.js
+
+IndexedDB operations for offline storage:
+
+```javascript
+export async function saveTile(key, blob)   // Cache map tile
+export async function getTile(key)          // Retrieve cached tile
+export async function cleanOldTiles()       // Remove expired cache
+```
+
+**Features**:
+- Store map tiles for offline use
+- Manage cache expiration
+- Clean up old data
+
+**Location**: `services/db.js:1`
+
+---
+
+## Configuration
+
+### api.js
+
+API configuration:
+
+```javascript
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+```
+
+**Location**: `config/api.js:1`
+
+### Environment Variables
+
+Create `Frontend/.env`:
+
+```env
+VITE_API_URL=http://localhost:3000/api
+```
+
+---
+
+## Internationalization (i18n)
+
+### Configuration
+
+**Location**: `i18n/index.js`
+
+Setup with i18next:
+- Spanish (es) - default
+- English (en)
+- Browser language detection
+- Persistent language preference
+
+### Translation Files
+
+**Locations**:
+- `i18n/locales/es.json` - Spanish translations
+- `i18n/locales/en.json` - English translations
+
+### Usage in Components
+
+```jsx
+import { useTranslation } from 'react-i18next';
+
+function MyComponent() {
+  const { t } = useTranslation();
+  return <h1>{t('common.title')}</h1>;
+}
+```
+
+---
+
+## Styling
+
+### CSS Architecture
+
+- **App.css** - Global styles and main layout
+- **Component-specific CSS** - Co-located with components
+- **modal-light-overrides.css** - Light theme modal styling
+
+### Theme System
+
+- Dark mode class: `dark-theme` on `<body>`
+- Persisted in localStorage
+- CSS variables for theme colors
+- Automatic theme detection from OS preferences
+
+```jsx
+// Theme toggle in App.jsx:270
+<button onClick={() => setIsDarkMode(!isDarkMode)}>
+  {isDarkMode ? <SunIcon /> : <MoonIcon />}
+</button>
+```
+
+---
+
+## State Management
+
+### React Context
+
+- **AuthContext** - User authentication state
+- Additional contexts in `context/` directory
+
+### Local State
+
+- Component-level state with `useState`
+- Form state management
+- UI state (modals, menus, tabs)
+
+### Server State
+
+- Direct API calls with Axios
+- No external state management library (no Redux/Zustand)
+- Future consideration: React Query for caching
+
+---
+
+## Routing
+
+### Tab-Based Navigation
+
+Instead of React Router for main sections, SaludMap uses a tab system:
+
+```jsx
+const [activeTab, setActiveTab] = useState('mapa');
+```
+
+Tabs:
+- `mapa` - Map view
+- `turnos` - Appointments
+- `seguros` - Insurance
+- `analytics` - Analytics (when establishment selected)
+
+### Custom Events
+
+For inter-component communication:
+
+```javascript
+// Trigger tab change
+window.dispatchEvent(new CustomEvent('saludmap:change-tab', { 
+  detail: { tab: 'turnos' } 
+}));
+
+// Trigger map action
+window.dispatchEvent(new CustomEvent('map-action', { 
+  detail: 'calibrate' 
+}));
+```
+
+---
+
+## Key Libraries
+
+### UI Components
+- **sonner** - Toast notifications
+- **driver.js** - Interactive tutorials
+- **chart.js** + **react-chartjs-2** - Data visualization
+
+### Maps
+- **leaflet** - Map rendering library
+- **react-leaflet** - React bindings for Leaflet
+- **opening_hours** - Parse establishment hours
+
+### Forms & Data
+- **axios** - HTTP client
+- **exceljs** + **file-saver** - Export data to Excel
+- **xlsx** - Read Excel files
+
+### Offline
+- **idb** - IndexedDB wrapper
+- Service Worker (via Vite PWA plugin)
+
+---
+
+## Build & Development
+
+### Development Server
+
+```bash
+cd Frontend
+npm run dev
+```
+
+Runs on `http://localhost:5173`
+
+### Production Build
+
+```bash
+npm run build
+```
+
+Outputs to `Frontend/dist/`
+
+### Preview Production Build
+
+```bash
+npm run preview
+```
+
+### Vite Configuration
+
+**Location**: `Frontend/vite.config.js`
+
+Features:
+- SWC for fast compilation
+- React Fast Refresh
+- Environment variable handling
+- Production optimizations
+
+---
+
+## Performance Optimizations
+
+### Code Splitting
+- Dynamic imports with `React.lazy()`
+- Route-based splitting
+- Component-level splitting for large features
+
+### Asset Optimization
+- Image optimization in build
+- Tree shaking for unused code
+- Minification and compression
+
+### Caching Strategies
+- IndexedDB for offline data
+- localStorage for preferences
+- Map tile caching
+
+---
+
+## Testing
+
+Currently no test suite configured. Recommended setup:
+
+```bash
+npm install --save-dev vitest @testing-library/react @testing-library/jest-dom
+```
+
+See [Testing Guide](/development/testing) for details.
+
+---
+
+## Common Patterns
+
+### API Calls
+
+```jsx
+import axios from 'axios';
+import { API_BASE_URL } from '../config/api';
+
+const fetchData = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/endpoint`);
+    return response.data;
+  } catch (error) {
+    console.error('API Error:', error);
+    throw error;
+  }
+};
+```
+
+### Authentication Headers
+
+```javascript
+const token = localStorage.getItem('token');
+const config = {
+  headers: { Authorization: `Bearer ${token}` }
+};
+await axios.get(`${API_BASE_URL}/protected`, config);
+```
+
+### Toast Notifications
+
+```jsx
+import { toast } from 'sonner';
+
+toast.success('Operation successful!');
+toast.error('Something went wrong');
+toast.info('Information message');
+```
+
+---
+
+## Related Documentation
+
+- [Architecture](/development/architecture) - System architecture overview
+- [Backend Structure](/development/backend-structure) - Backend organization
+- [Local Setup](/development/local-setup) - Development environment setup
+- [Running Servers](/development/running-servers) - Start dev servers

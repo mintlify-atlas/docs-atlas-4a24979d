@@ -1,0 +1,182 @@
+---
+title: Theme Configuration
+description: Configure dark/light mode and color schemes in SaludMap
+---
+
+# Theme Configuration
+
+SaludMap includes a built-in theme system with support for light and dark modes. The theme automatically adapts to user preferences and persists across sessions.
+
+## Theme Toggle
+
+The theme can be toggled using the sun/moon button in the navigation bar. The theme state is:
+
+- Stored in `localStorage` as `'theme'` with values `'light'` or `'dark'`
+- Automatically detected from system preferences if not previously set
+- Applied via the `dark-theme` class on the `<body>` element
+
+### Implementation
+
+The theme logic is implemented in `Frontend/src/App.jsx:33-47`:
+
+```jsx
+const [isDarkMode, setIsDarkMode] = useState(() => {
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme) return savedTheme === 'dark';
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+});
+
+useEffect(() => {
+  if (isDarkMode) {
+    document.body.classList.add('dark-theme');
+    localStorage.setItem('theme', 'dark');
+  } else {
+    document.body.classList.remove('dark-theme');
+    localStorage.setItem('theme', 'light');
+  }
+}, [isDarkMode]);
+```
+
+## Color Palette
+
+All theme colors are defined using CSS custom properties in `Frontend/src/index.css`. The color system uses semantic naming for easy maintenance.
+
+### Light Mode Colors
+
+Based on `COLORES.md`, light mode uses:
+
+| Variable | Value | Usage |
+|----------|-------|-------|
+| `--color-titulo` | `#4daa90` | Titles and highlighted text |
+| `--color-boton-relleno` | `#66b09d` | Primary button background |
+| `--color-boton-texto` | `#000000` | Button text and placeholders |
+| `--color-chat-relleno` | `#cecece` | Chat and info backgrounds |
+| `--color-placeholder` | `#b6e7d9` | Input placeholder backgrounds |
+| `--color-chat-borde` | `#C9EFE4` | Chat borders |
+| `--bg-main` | `#cdebe1` | Main background |
+| `--bg-navbar-modal` | `#cffdee` | Navbar and modal backgrounds |
+
+### Dark Mode Colors
+
+Dark mode overrides are defined in the `.dark-theme` class:
+
+| Variable | Value | Usage |
+|----------|-------|-------|
+| `--color-titulo` | `#66b09d` | Titles and highlighted text |
+| `--color-boton-relleno` | `#1d5042` | Primary button background |
+| `--color-boton-texto` | `#ffffff` | Button text and placeholders |
+| `--color-chat-relleno` | `#A9B0AE` | Chat and info backgrounds |
+| `--color-placeholder` | `#2d3a37` | Input placeholder backgrounds |
+| `--color-chat-borde` | `#66b09d` | Chat borders |
+| `--bg-main` | `#0f1716` | Main background |
+| `--bg-navbar-modal` | `#142a28` | Navbar and modal backgrounds |
+| `--text-main` | `#dbeee6` | Main text color |
+| `--text-muted` | `#8aada5` | Muted text color |
+
+## Customizing Colors
+
+To customize theme colors:
+
+1. **Edit the color values** in `Frontend/src/index.css`:
+   - Light mode: Lines 30-60 (`:root` selector)
+   - Dark mode: Lines 174-215 (`.dark-theme` selector)
+
+2. **Follow the naming convention**:
+   - `--color-*` for semantic colors from COLORES.md
+   - `--bg-*` for backgrounds
+   - `--text-*` for text colors
+   - `--btn-*` for button-specific colors
+
+3. **Test both themes** to ensure readability and contrast
+
+### Example: Changing Primary Green
+
+```css
+/* Light mode */
+:root {
+  --color-titulo: #3a9a80; /* Darker green */
+}
+
+/* Dark mode */
+.dark-theme {
+  --color-titulo: #76c2b6; /* Lighter green */
+}
+```
+
+## Logo Adaptation
+
+The logo changes between light and dark modes:
+
+- **Light mode**: `logo-light.png`
+- **Dark mode**: `logo-dark.png`
+
+Implementation in `Frontend/src/App.jsx:138`:
+
+```jsx
+<img src={isDarkMode ? LogoDark : LogoLight} alt="SaludMap Logo" className="logo-img" />
+```
+
+## Logo Text Colors
+
+The logo text has specific colors defined in `Frontend/src/App.css:135-139`:
+
+```css
+.logo-part-1 { color: #1E2C3D; }
+.logo-part-2 { color: #61A196; }
+
+body.dark-theme .logo-part-1 { color: #FFFFFF; }
+/* .logo-part-2 stays green in dark mode */
+```
+
+## Toast Notifications
+
+Toast notifications automatically adapt to the theme using the `theme` prop on the Toaster component:
+
+```jsx
+<Toaster
+  position="top-center"
+  richColors
+  theme={isDarkMode ? 'dark' : 'light'}
+  className="sonner-toaster"
+/>
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use CSS Variables">
+    Always reference colors using `var(--variable-name)` instead of hardcoding hex values. This ensures colors adapt to theme changes.
+  </Accordion>
+
+  <Accordion title="Test Accessibility">
+    Ensure sufficient contrast ratios (4.5:1 for normal text, 3:1 for large text) in both themes using tools like WebAIM's Contrast Checker.
+  </Accordion>
+
+  <Accordion title="Avoid !important">
+    The theme system avoids `!important` declarations. Use proper CSS specificity instead.
+  </Accordion>
+
+  <Accordion title="Semantic Naming">
+    Use semantic variable names (e.g., `--btn-primary-bg`) rather than descriptive names (e.g., `--green-color`) for easier theme maintenance.
+  </Accordion>
+</AccordionGroup>
+
+## Transition Effects
+
+Theme transitions are smooth due to CSS transitions on the body:
+
+```css
+body {
+  background: var(--bg-main);
+  color: var(--text-main);
+  transition: background 0.3s ease;
+}
+```
+
+Most UI elements use the global transition variable:
+
+```css
+:root {
+  --transition: all 0.2s ease;
+}
+```

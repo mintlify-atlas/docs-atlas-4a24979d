@@ -1,0 +1,158 @@
+---
+title: 'Get Reviews by Establishment'
+api: 'GET /resenias/establecimiento/:id'
+---
+
+Retrieves all reviews for a specific healthcare establishment. This is a public endpoint that does not require authentication.
+
+## Path Parameters
+
+<ParamField path="id" type="number" required>
+  The unique identifier of the healthcare establishment
+</ParamField>
+
+## Response
+
+<ResponseField name="reviews" type="array">
+  Array of review objects for the establishment
+  
+  <ResponseField name="id" type="number">
+    The unique identifier for the review
+  </ResponseField>
+  
+  <ResponseField name="usuarioId" type="number">
+    The ID of the user who created the review
+  </ResponseField>
+  
+  <ResponseField name="turnoId" type="number">
+    The ID of the appointment
+  </ResponseField>
+  
+  <ResponseField name="establecimientoId" type="number">
+    The ID of the healthcare establishment
+  </ResponseField>
+  
+  <ResponseField name="puntuacion" type="number">
+    Rating score (1-5)
+  </ResponseField>
+  
+  <ResponseField name="comentario" type="string">
+    The review comment
+  </ResponseField>
+  
+  <ResponseField name="createdAt" type="string">
+    Timestamp when the review was created
+  </ResponseField>
+  
+  <ResponseField name="usuario" type="object">
+    User information (typically anonymized)
+    
+    <ResponseField name="id" type="number">
+      User ID
+    </ResponseField>
+    
+    <ResponseField name="nombre" type="string">
+      User first name
+    </ResponseField>
+    
+    <ResponseField name="apellido" type="string">
+      User last name
+    </ResponseField>
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="average" type="number">
+  Average rating across all reviews
+</ResponseField>
+
+<ResponseField name="total" type="number">
+  Total number of reviews
+</ResponseField>
+
+## Example Request
+
+```bash
+GET /resenias/establecimiento/45
+```
+
+## Example Response
+
+```json
+{
+  "reviews": [
+    {
+      "id": 501,
+      "usuarioId": 123,
+      "turnoId": 1001,
+      "establecimientoId": 45,
+      "puntuacion": 5,
+      "comentario": "Excelente atención, muy profesional y amable.",
+      "createdAt": "2026-03-09T16:30:00.000Z",
+      "usuario": {
+        "id": 123,
+        "nombre": "Juan",
+        "apellido": "P."
+      }
+    },
+    {
+      "id": 498,
+      "usuarioId": 117,
+      "turnoId": 995,
+      "establecimientoId": 45,
+      "puntuacion": 4,
+      "comentario": "Buena experiencia en general, instalaciones limpias.",
+      "createdAt": "2026-03-08T10:15:00.000Z",
+      "usuario": {
+        "id": 117,
+        "nombre": "María",
+        "apellido": "G."
+      }
+    },
+    {
+      "id": 487,
+      "usuarioId": 109,
+      "turnoId": 982,
+      "establecimientoId": 45,
+      "puntuacion": 5,
+      "comentario": "Personal muy atento y bien organizado.",
+      "createdAt": "2026-03-05T14:20:00.000Z",
+      "usuario": {
+        "id": 109,
+        "nombre": "Carlos",
+        "apellido": "M."
+      }
+    }
+  ],
+  "average": 4.67,
+  "total": 3
+}
+```
+
+## Error Responses
+
+### Establishment Not Found
+
+```json
+{
+  "statusCode": 404,
+  "message": "Establishment not found",
+  "error": "Not Found"
+}
+```
+
+### Invalid ID
+
+```json
+{
+  "statusCode": 400,
+  "message": "Invalid establishment ID",
+  "error": "Bad Request"
+}
+```
+
+## Use Cases
+
+- Display reviews on establishment detail pages
+- Calculate and show average ratings
+- Help users make informed decisions about healthcare providers
+- Provide social proof for healthcare establishments

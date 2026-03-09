@@ -1,0 +1,282 @@
+---
+title: 'Get Establishment by ID'
+api: 'GET /establecimientos/:id'
+description: 'Retrieve detailed information about a specific establishment by its unique identifier'
+---
+
+## Overview
+
+Fetch complete details for a healthcare establishment using its database ID. Returns full information including reviews with user details and available specialties.
+
+## Path Parameters
+
+<ParamField path="id" type="number" required>
+  Unique identifier of the establishment.
+  
+  **Example:** `42`
+</ParamField>
+
+## Response
+
+<ResponseField name="id" type="number">
+  Unique establishment identifier
+</ResponseField>
+
+<ResponseField name="nombre" type="string">
+  Establishment name
+</ResponseField>
+
+<ResponseField name="tipo" type="string">
+  Type of establishment (hospital, clinic, doctors, etc.)
+</ResponseField>
+
+<ResponseField name="lat" type="number">
+  Latitude coordinate
+</ResponseField>
+
+<ResponseField name="lng" type="number">
+  Longitude coordinate
+</ResponseField>
+
+<ResponseField name="direccion" type="string | null">
+  Physical address
+</ResponseField>
+
+<ResponseField name="telefono" type="string | null">
+  Contact phone number
+</ResponseField>
+
+<ResponseField name="horarios" type="string | null">
+  Operating hours information
+</ResponseField>
+
+<ResponseField name="metadata" type="object">
+  Additional metadata stored as JSON
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  ISO 8601 timestamp when the establishment was created
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string">
+  ISO 8601 timestamp of the last update
+</ResponseField>
+
+<ResponseField name="resenias" type="array">
+  Complete reviews with user information, ordered by most recent:
+  
+  <ResponseField name="id" type="number">
+    Review unique identifier
+  </ResponseField>
+  
+  <ResponseField name="puntuacion" type="number">
+    Rating score (typically 1-5 stars)
+  </ResponseField>
+  
+  <ResponseField name="comentario" type="string">
+    Review text/comment
+  </ResponseField>
+  
+  <ResponseField name="establecimientoId" type="number">
+    ID of the reviewed establishment
+  </ResponseField>
+  
+  <ResponseField name="usuarioId" type="number">
+    ID of the user who wrote the review
+  </ResponseField>
+  
+  <ResponseField name="createdAt" type="string">
+    When the review was written
+  </ResponseField>
+  
+  <ResponseField name="updatedAt" type="string">
+    When the review was last modified
+  </ResponseField>
+  
+  <ResponseField name="usuario" type="object">
+    Information about the reviewer:
+    
+    <ResponseField name="id" type="number">
+      User ID
+    </ResponseField>
+    
+    <ResponseField name="nombre" type="string">
+      User first name
+    </ResponseField>
+    
+    <ResponseField name="apellido" type="string">
+      User last name
+    </ResponseField>
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="especialidades" type="array">
+  Medical specialties available at this establishment:
+  
+  <ResponseField name="establecimientoId" type="number">
+    Establishment ID
+  </ResponseField>
+  
+  <ResponseField name="especialidadId" type="number">
+    Specialty ID
+  </ResponseField>
+  
+  <ResponseField name="horariosDisponibles" type="string | null">
+    Available schedule for this specialty
+  </ResponseField>
+  
+  <ResponseField name="especialidad" type="object">
+    Specialty details:
+    
+    <ResponseField name="id" type="number">
+      Specialty unique identifier
+    </ResponseField>
+    
+    <ResponseField name="nombre" type="string">
+      Specialty name (e.g., "Cardiología", "Pediatría")
+    </ResponseField>
+    
+    <ResponseField name="descripcion" type="string | null">
+      Description of the specialty
+    </ResponseField>
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X GET "https://api.saludmap.com/establecimientos/42"
+```
+
+## Example Response
+
+```json
+{
+  "id": 42,
+  "nombre": "Clínica Santa María",
+  "tipo": "clinic",
+  "lat": -34.5891,
+  "lng": -58.3974,
+  "direccion": "Av. Santa Fe 2456, Buenos Aires",
+  "telefono": "+54 11 4805-1234",
+  "horarios": "Lunes a Viernes 7:00-21:00, Sábados 8:00-14:00",
+  "metadata": {
+    "parking": true,
+    "wheelchair_accessible": true,
+    "accepts_insurance": ["OSDE", "Swiss Medical", "Galeno"]
+  },
+  "createdAt": "2024-02-15T09:00:00.000Z",
+  "updatedAt": "2024-03-08T11:30:00.000Z",
+  "resenias": [
+    {
+      "id": 205,
+      "puntuacion": 5,
+      "comentario": "Excelente clínica, muy moderna y limpia. El personal es muy atento.",
+      "establecimientoId": 42,
+      "usuarioId": 78,
+      "createdAt": "2024-03-07T16:45:00.000Z",
+      "updatedAt": "2024-03-07T16:45:00.000Z",
+      "usuario": {
+        "id": 78,
+        "nombre": "Laura",
+        "apellido": "Fernández"
+      }
+    },
+    {
+      "id": 198,
+      "puntuacion": 4,
+      "comentario": "Buena atención, aunque a veces hay que esperar un poco.",
+      "establecimientoId": 42,
+      "usuarioId": 65,
+      "createdAt": "2024-03-01T10:20:00.000Z",
+      "updatedAt": "2024-03-01T10:20:00.000Z",
+      "usuario": {
+        "id": 65,
+        "nombre": "Roberto",
+        "apellido": "Martínez"
+      }
+    }
+  ],
+  "especialidades": [
+    {
+      "establecimientoId": 42,
+      "especialidadId": 2,
+      "horariosDisponibles": "Lunes, Miércoles y Viernes 9:00-13:00",
+      "especialidad": {
+        "id": 2,
+        "nombre": "Dermatología",
+        "descripcion": "Diagnóstico y tratamiento de enfermedades de la piel"
+      }
+    },
+    {
+      "establecimientoId": 42,
+      "especialidadId": 5,
+      "horariosDisponibles": "Martes y Jueves 14:00-19:00",
+      "especialidad": {
+        "id": 5,
+        "nombre": "Traumatología",
+        "descripcion": "Tratamiento de lesiones del sistema musculoesquelético"
+      }
+    },
+    {
+      "establecimientoId": 42,
+      "especialidadId": 8,
+      "horariosDisponibles": null,
+      "especialidad": {
+        "id": 8,
+        "nombre": "Oftalmología",
+        "descripcion": "Cuidado de la salud visual y ocular"
+      }
+    }
+  ]
+}
+```
+
+## Error Responses
+
+### 400 Bad Request
+
+Returned when the ID parameter is not a valid integer:
+
+```json
+{
+  "statusCode": 400,
+  "message": "Validation failed (numeric string is expected)",
+  "error": "Bad Request"
+}
+```
+
+### 404 Not Found
+
+Returned when no establishment exists with the specified ID:
+
+```json
+{
+  "statusCode": 404,
+  "message": "Establecimiento no encontrado",
+  "error": "Not Found"
+}
+```
+
+## Use Cases
+
+- **Detail Page**: Display complete establishment information on a dedicated page
+- **Review System**: Show all reviews for an establishment
+- **Specialty Lookup**: Find what medical services are available
+- **Direct Access**: Navigate directly to a specific establishment via URL
+- **Data Relationships**: Access full relational data (reviews, specialties, users)
+
+## Related Endpoints
+
+- `GET /establecimientos/:id/resenias` - Get reviews with statistics
+- `GET /establecimientos/:id/especialidades` - Get only specialties
+- `GET /establecimientos/coords/:lat/:lng` - Find by coordinates instead of ID
+
+## Notes
+
+- Reviews are ordered by creation date (most recent first)
+- User information in reviews is limited to id, nombre, and apellido for privacy
+- Specialties include relationship data (horariosDisponibles from the join table)
+- Returns 404 if the establishment doesn't exist (unlike coords endpoint which returns 200 with a message)
+- The `metadata` field can contain any JSON structure
+- Related entities (reviews, specialties) are eagerly loaded in a single query

@@ -1,122 +1,162 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "SaludMap",
+  "theme": "almond",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#66b09d",
+    "light": "#9EE2CF",
+    "dark": "#4daa90"
   },
-  "favicon": "/favicon.svg",
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/GabyAvila1993/SaludMap"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/GabyAvila1993/SaludMap"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get Started",
             "pages": [
-              "index",
+              "introduction",
               "quickstart",
-              "development"
+              "installation"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Core Features",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "features/map-search",
+              "features/appointments",
+              "features/reviews",
+              "features/offline-mode",
+              "features/chatbot",
+              "features/emergency"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "User Guide",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "guide/authentication",
+              "guide/finding-facilities",
+              "guide/booking-appointments",
+              "guide/writing-reviews",
+              "guide/saved-locations",
+              "guide/internationalization"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Configuration",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "configuration/theme",
+              "configuration/environment",
+              "configuration/database"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Authentication",
             "pages": [
-              "api-reference/introduction"
+              "api/auth/login",
+              "api/auth/register"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Places",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api/places/search",
+              "api/places/nearby"
+            ]
+          },
+          {
+            "group": "Establishments",
+            "pages": [
+              "api/establishments/list",
+              "api/establishments/create",
+              "api/establishments/get-by-coords",
+              "api/establishments/get-by-id"
+            ]
+          },
+          {
+            "group": "Appointments",
+            "pages": [
+              "api/appointments/create",
+              "api/appointments/list",
+              "api/appointments/update",
+              "api/appointments/delete"
+            ]
+          },
+          {
+            "group": "Reviews",
+            "pages": [
+              "api/reviews/create",
+              "api/reviews/list",
+              "api/reviews/get-by-establishment"
+            ]
+          },
+          {
+            "group": "Specialties",
+            "pages": [
+              "api/specialties/list",
+              "api/specialties/create"
+            ]
+          },
+          {
+            "group": "Users",
+            "pages": [
+              "api/users/profile",
+              "api/users/update"
+            ]
+          },
+          {
+            "group": "Chatbot",
+            "pages": [
+              "api/chatbot/chat"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Development",
+        "groups": [
+          {
+            "group": "Architecture",
+            "pages": [
+              "development/architecture",
+              "development/database-schema",
+              "development/frontend-structure",
+              "development/backend-structure"
+            ]
+          },
+          {
+            "group": "Development Setup",
+            "pages": [
+              "development/local-setup",
+              "development/running-servers",
+              "development/testing"
+            ]
+          },
+          {
+            "group": "Contributing",
+            "pages": [
+              "development/contributing",
+              "development/code-style"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

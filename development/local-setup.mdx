@@ -1,0 +1,493 @@
+---
+title: Local Development Setup
+description: Step-by-step guide to set up SaludMap on your local machine
+---
+
+## Prerequisites
+
+Before setting up SaludMap, ensure you have the following installed:
+
+### Required Software
+
+- **Node.js**: v18.0.0 or higher
+  - Download from [nodejs.org](https://nodejs.org/)
+  - Verify: `node --version`
+
+- **npm**: v9.0.0 or higher (comes with Node.js)
+  - Verify: `npm --version`
+
+- **MySQL**: v8.0 or higher
+  - Download from [mysql.com](https://www.mysql.com/downloads/)
+  - Alternatively, use Docker: `docker run -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mysql:8`
+
+- **Git**: Latest version
+  - Download from [git-scm.com](https://git-scm.com/)
+  - Verify: `git --version`
+
+### Optional Tools
+
+- **Visual Studio Code**: Recommended IDE
+- **MySQL Workbench**: For database management
+- **Postman** or **Insomnia**: For API testing
+- **Docker**: For containerized MySQL
+
+---
+
+## Cloning the Repository
+
+### First Time Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/GabyAvila1993/SaludMap.git
+
+# Navigate to project directory
+cd SaludMap
+```
+
+### Project Structure
+
+After cloning, you'll see:
+
+```
+SaludMap/
+├── Frontend/     # React frontend application
+├── backend/      # NestJS backend application
+└── README.md
+```
+
+---
+
+## Database Setup
+
+### 1. Create MySQL Database
+
+```bash
+# Connect to MySQL
+mysql -u root -p
+```
+
+```sql
+-- Create database
+CREATE DATABASE saludmap CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Create user (optional, for better security)
+CREATE USER 'saludmap_user'@'localhost' IDENTIFIED BY 'your_password';
+
+-- Grant privileges
+GRANT ALL PRIVILEGES ON saludmap.* TO 'saludmap_user'@'localhost';
+
+-- Apply changes
+FLUSH PRIVILEGES;
+
+-- Exit
+EXIT;
+```
+
+### 2. Configure Database Connection
+
+Create `backend/.env` file:
+
+```bash
+cd backend
+touch .env  # On Windows: type nul > .env
+```
+
+Add the following content to `backend/.env`:
+
+```env
+# Database Configuration
+DATABASE_URL="mysql://root:password@localhost:3306/saludmap"
+
+# Or with custom user:
+# DATABASE_URL="mysql://saludmap_user:your_password@localhost:3306/saludmap"
+
+# JWT Configuration
+JWT_SECRET="your-super-secret-jwt-key-change-in-production"
+JWT_EXPIRES_IN="24h"
+
+# Server Configuration
+PORT=3000
+
+# Google Gemini AI (for chatbot)
+GEMINI_API_KEY="your-gemini-api-key"
+# Get API key from: https://makersuite.google.com/app/apikey
+```
+
+**Important**: Replace placeholder values with your actual credentials.
+
+---
+
+## Backend Setup
+
+### 1. Install Dependencies
+
+```bash
+cd backend
+npm install
+```
+
+This installs all required packages including:
+- NestJS framework
+- Prisma ORM
+- Authentication libraries
+- Google Gemini AI SDK
+- And more...
+
+### 2. Generate Prisma Client
+
+```bash
+npm run prisma:generate
+```
+
+This generates TypeScript types and Prisma Client based on your schema.
+
+### 3. Push Database Schema
+
+```bash
+npm run prisma:push
+```
+
+This creates all tables in your MySQL database based on `prisma/schema.prisma`.
+
+**Alternative**: Use migrations for production:
+
+```bash
+npx prisma migrate dev --name initial_setup
+```
+
+### 4. Verify Database
+
+Open Prisma Studio to verify tables were created:
+
+```bash
+npm run prisma:studio
+```
+
+This opens a GUI at `http://localhost:5555` where you can browse your database.
+
+### 5. Seed Database (Optional)
+
+If you have seed data, create a seed script:
+
+```bash
+cd backend
+# Create seed file if it doesn't exist
+touch prisma/seed.ts
+```
+
+Add seed script to `package.json`:
+
+```json
+{
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  }
+}
+```
+
+Run seed:
+
+```bash
+npx prisma db seed
+```
+
+---
+
+## Frontend Setup
+
+### 1. Install Dependencies
+
+```bash
+cd Frontend
+npm install
+```
+
+This installs:
+- React and React DOM
+- Vite build tool
+- Leaflet for maps
+- Axios for API calls
+- i18next for internationalization
+- And more...
+
+### 2. Configure API URL
+
+Create `Frontend/.env` file:
+
+```bash
+touch .env  # On Windows: type nul > .env
+```
+
+Add API configuration:
+
+```env
+VITE_API_URL=http://localhost:3000/api
+```
+
+This tells the frontend where to find the backend API.
+
+### 3. Verify Configuration
+
+Check that `Frontend/src/config/api.js` uses the environment variable:
+
+```javascript
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+```
+
+---
+
+## Verification
+
+### Check Installation
+
+Verify all dependencies are installed correctly:
+
+```bash
+# Backend
+cd backend
+ls node_modules | wc -l  # Should show many packages
+
+# Frontend
+cd ../Frontend
+ls node_modules | wc -l  # Should show many packages
+```
+
+### Common Issues
+
+#### Port Already in Use
+
+If port 3000 is already in use:
+
+```bash
+# Change backend port in .env
+PORT=3001
+
+# Update frontend API URL
+VITE_API_URL=http://localhost:3001/api
+```
+
+#### MySQL Connection Failed
+
+- Verify MySQL is running: `mysql -u root -p`
+- Check DATABASE_URL format in `backend/.env`
+- Ensure database exists: `SHOW DATABASES;`
+- Check user permissions: `SHOW GRANTS FOR 'user'@'localhost';`
+
+#### Prisma Generation Failed
+
+```bash
+# Clear Prisma cache
+cd backend
+rm -rf node_modules/.prisma
+rm -rf generated
+
+# Regenerate
+npm run prisma:generate
+```
+
+#### Node Version Issues
+
+Ensure you're using Node.js 18+:
+
+```bash
+node --version  # Should be v18.x or higher
+```
+
+Use [nvm](https://github.com/nvm-sh/nvm) to manage Node versions:
+
+```bash
+nvm install 18
+nvm use 18
+```
+
+---
+
+## IDE Setup (VS Code)
+
+### Recommended Extensions
+
+Install these VS Code extensions for better development experience:
+
+1. **ESLint** - JavaScript linting
+2. **Prettier** - Code formatting
+3. **Prisma** - Prisma schema support
+4. **ES7+ React/Redux/React-Native snippets** - React snippets
+5. **TypeScript Vue Plugin (Volar)** - Better TypeScript support
+
+### Workspace Settings
+
+Create `.vscode/settings.json` in project root:
+
+```json
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  },
+  "[prisma]": {
+    "editor.defaultFormatter": "Prisma.prisma"
+  },
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true
+}
+```
+
+---
+
+## Environment Variables Reference
+
+### Backend (.env)
+
+```env
+# Database
+DATABASE_URL="mysql://USER:PASSWORD@HOST:PORT/DATABASE"
+
+# JWT Authentication
+JWT_SECRET="your-secret-key-min-32-characters-long"
+JWT_EXPIRES_IN="24h"
+
+# Server
+PORT=3000
+NODE_ENV="development"
+
+# Google Gemini AI
+GEMINI_API_KEY="your-gemini-api-key"
+
+# CORS (optional)
+CORS_ORIGIN="*"  # In production, set to your frontend URL
+```
+
+### Frontend (.env)
+
+```env
+# API Configuration
+VITE_API_URL=http://localhost:3000/api
+
+# Optional: Map tile server
+VITE_MAP_TILES_URL=https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png
+```
+
+---
+
+## Getting Google Gemini API Key
+
+1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Sign in with your Google account
+3. Click "Create API Key"
+4. Copy the key and add it to `backend/.env`:
+
+```env
+GEMINI_API_KEY="your-actual-api-key-here"
+```
+
+**Note**: The chatbot feature won't work without this key.
+
+---
+
+## Troubleshooting
+
+### Database Connection Issues
+
+```bash
+# Test MySQL connection
+mysql -u root -p -h localhost
+
+# Check if MySQL is running
+sudo systemctl status mysql  # Linux
+brew services list           # macOS
+# Windows: Check Services app
+```
+
+### Prisma Issues
+
+```bash
+# Reset database (WARNING: Deletes all data)
+cd backend
+npx prisma migrate reset
+
+# Or drop and recreate
+mysql -u root -p
+> DROP DATABASE saludmap;
+> CREATE DATABASE saludmap;
+> EXIT;
+npm run prisma:push
+```
+
+### Node Modules Corruption
+
+```bash
+# Backend
+cd backend
+rm -rf node_modules package-lock.json
+npm install
+
+# Frontend
+cd ../Frontend
+rm -rf node_modules package-lock.json
+npm install
+```
+
+### Port Conflicts
+
+```bash
+# Find process using port 3000
+lsof -i :3000        # macOS/Linux
+netstat -ano | findstr :3000  # Windows
+
+# Kill process
+kill -9 <PID>        # macOS/Linux
+taskkill /PID <PID> /F  # Windows
+```
+
+---
+
+## Next Steps
+
+Once setup is complete:
+
+1. [Run the development servers](/development/running-servers)
+2. Explore the [frontend structure](/development/frontend-structure)
+3. Explore the [backend structure](/development/backend-structure)
+4. Review the [database schema](/development/database-schema)
+5. Check out [contributing guidelines](/development/contributing)
+
+---
+
+## Quick Start Summary
+
+```bash
+# Clone repository
+git clone https://github.com/GabyAvila1993/SaludMap.git
+cd SaludMap
+
+# Setup Backend
+cd backend
+npm install
+cp .env.example .env  # Create and configure .env
+npm run prisma:generate
+npm run prisma:push
+
+# Setup Frontend
+cd ../Frontend
+npm install
+cp .env.example .env  # Create and configure .env
+
+# Run both servers (in separate terminals)
+cd backend && npm run start:dev
+cd Frontend && npm run dev
+```
+
+Access the application at:
+- Frontend: `http://localhost:5173`
+- Backend API: `http://localhost:3000/api`
+- Prisma Studio: `http://localhost:5555`
+
+---
+
+## Need Help?
+
+- Check the [troubleshooting section](#troubleshooting) above
+- Review the [architecture documentation](/development/architecture)
+- Open an issue on [GitHub](https://github.com/GabyAvila1993/SaludMap/issues)

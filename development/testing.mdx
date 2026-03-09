@@ -1,0 +1,907 @@
+---
+title: Testing Guide
+description: Testing strategies and guidelines for SaludMap
+---
+
+## Overview
+
+While SaludMap doesn't currently have a comprehensive test suite, this guide provides recommendations and best practices for implementing testing across the application.
+
+---
+
+## Testing Strategy
+
+### Test Pyramid
+
+```
+        /\
+       /  \     E2E Tests (Few)
+      /____\
+     /      \   Integration Tests (Some)
+    /________\
+   /          \  Unit Tests (Many)
+  /__________\
+```
+
+**Recommended Distribution**:
+- **70% Unit Tests** - Fast, isolated component/function tests
+- **20% Integration Tests** - API endpoints, database operations
+- **10% E2E Tests** - Critical user journeys
+
+---
+
+## Backend Testing
+
+### Setup
+
+NestJS comes with Jest pre-configured:
+
+```bash
+cd backend
+
+# Install testing dependencies (if not present)
+npm install --save-dev @nestjs/testing @types/jest supertest
+
+# Run tests
+npm run test
+
+# Run with coverage
+npm run test:cov
+
+# Run in watch mode
+npm run test:watch
+
+# Run E2E tests
+npm run test:e2e
+```
+
+### Unit Tests
+
+Test individual services and controllers in isolation.
+
+#### Testing a Service
+
+**Location**: `backend/src/usuarios/usuarios.service.spec.ts`
+
+```typescript
+import { Test, TestingModule } from '@nestjs/testing';
+import { UsuariosService } from './usuarios.service';
+import { PrismaClient } from '../generated';
+
+describe('UsuariosService', () => {
+  let service: UsuariosService;
+  let prisma: PrismaClient;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UsuariosService,
+        {
+          provide: PrismaClient,
+          useValue: {
+            usuario: {
+              create: jest.fn(),
+              findUnique: jest.fn(),
+              findMany: jest.fn(),
+            },
+          },
+        },
+      ],
+    }).compile();
+
+    service = module.get<UsuariosService>(UsuariosService);
+    prisma = module.get<PrismaClient>(PrismaClient);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  describe('create', () => {
+    it('should create a user with hashed password', async () => {
+      const userData = {
+        nombre: 'John',
+        apellido: 'Doe',
+        mail: 'john@example.com',
+        contrasenia: 'password123',
+      };
+
+      const expectedUser = {
+        id: 1,
+        ...userData,
+        contrasenia: 'hashed_password',
+        rol: 'usuario',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      jest.spyOn(prisma.usuario, 'create').mockResolvedValue(expectedUser);
+
+      const result = await service.create(userData);
+
+      expect(result.contrasenia).not.toBe(userData.contrasenia);
+      expect(prisma.usuario.create).toHaveBeenCalled();
+    });
+  });
+
+  describe('findByEmail', () => {
+    it('should return user when found', async () => {
+      const mockUser = {
+        id: 1,
+        nombre: 'John',
+        apellido: 'Doe',
+        mail: 'john@example.com',
+        contrasenia: 'hashed',
+        rol: 'usuario',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      jest.spyOn(prisma.usuario, 'findUnique').mockResolvedValue(mockUser);
+
+      const result = await service.findByEmail('john@example.com');
+
+      expect(result).toEqual(mockUser);
+      expect(prisma.usuario.findUnique).toHaveBeenCalledWith({
+        where: { mail: 'john@example.com' },
+      });
+    });
+
+    it('should return null when user not found', async () => {
+      jest.spyOn(prisma.usuario, 'findUnique').mockResolvedValue(null);
+
+      const result = await service.findByEmail('notfound@example.com');
+
+      expect(result).toBeNull();
+    });
+  });
+});
+```
+
+#### Testing a Controller
+
+**Location**: `backend/src/usuarios/usuarios.controller.spec.ts`
+
+```typescript
+import { Test, TestingModule } from '@nestjs/testing';
+import { UsuariosController } from './usuarios.controller';
+import { UsuariosService } from './usuarios.service';
+import { JwtService } from '@nestjs/jwt';
+
+describe('UsuariosController', () => {
+  let controller: UsuariosController;
+  let service: UsuariosService;
+
+  const mockUsuariosService = {
+    create: jest.fn(),
+    findByEmail: jest.fn(),
+    findById: jest.fn(),
+  };
+
+  const mockJwtService = {
+    sign: jest.fn(() => 'mock-jwt-token'),
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [UsuariosController],
+      providers: [
+        {
+          provide: UsuariosService,
+          useValue: mockUsuariosService,
+        },
+        {
+          provide: JwtService,
+          useValue: mockJwtService,
+        },
+      ],
+    }).compile();
+
+    controller = module.get<UsuariosController>(UsuariosController);
+    service = module.get<UsuariosService>(UsuariosService);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+
+  describe('login', () => {
+    it('should return user and token on successful login', async () => {
+      const loginDto = {
+        mail: 'test@example.com',
+        contrasenia: 'password123',
+      };
+
+      const mockUser = {
+        id: 1,
+        nombre: 'Test',
+        apellido: 'User',
+        mail: loginDto.mail,
+        rol: 'usuario',
+      };
+
+      mockUsuariosService.findByEmail.mockResolvedValue(mockUser);
+
+      const result = await controller.login(loginDto);
+
+      expect(result).toHaveProperty('token');
+      expect(result).toHaveProperty('user');
+      expect(result.token).toBe('mock-jwt-token');
+    });
+  });
+});
+```
+
+### Integration Tests
+
+Test API endpoints with database interactions.
+
+#### E2E Test Setup
+
+**Location**: `backend/test/usuarios.e2e-spec.ts`
+
+```typescript
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication } from '@nestjs/common';
+import * as request from 'supertest';
+import { AppModule } from '../src/app.module';
+import { PrismaClient } from '../src/generated';
+
+describe('Usuarios (e2e)', () => {
+  let app: INestApplication;
+  let prisma: PrismaClient;
+
+  beforeAll(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+    app.setGlobalPrefix('api');
+    await app.init();
+
+    prisma = new PrismaClient();
+  });
+
+  afterAll(async () => {
+    // Cleanup test data
+    await prisma.usuario.deleteMany({
+      where: { mail: { contains: 'test' } },
+    });
+    await prisma.$disconnect();
+    await app.close();
+  });
+
+  describe('/api/usuarios (POST)', () => {
+    it('should create a new user', () => {
+      return request(app.getHttpServer())
+        .post('/api/usuarios')
+        .send({
+          nombre: 'Test',
+          apellido: 'User',
+          mail: 'test@example.com',
+          contrasenia: 'password123',
+        })
+        .expect(201)
+        .expect((res) => {
+          expect(res.body).toHaveProperty('id');
+          expect(res.body.nombre).toBe('Test');
+          expect(res.body).not.toHaveProperty('contrasenia');
+        });
+    });
+
+    it('should reject duplicate email', () => {
+      return request(app.getHttpServer())
+        .post('/api/usuarios')
+        .send({
+          nombre: 'Test',
+          apellido: 'User',
+          mail: 'test@example.com',
+          contrasenia: 'password123',
+        })
+        .expect(409); // Conflict
+    });
+  });
+
+  describe('/api/usuarios/login (POST)', () => {
+    it('should login with valid credentials', () => {
+      return request(app.getHttpServer())
+        .post('/api/usuarios/login')
+        .send({
+          mail: 'test@example.com',
+          contrasenia: 'password123',
+        })
+        .expect(200)
+        .expect((res) => {
+          expect(res.body).toHaveProperty('token');
+          expect(res.body).toHaveProperty('user');
+        });
+    });
+
+    it('should reject invalid credentials', () => {
+      return request(app.getHttpServer())
+        .post('/api/usuarios/login')
+        .send({
+          mail: 'test@example.com',
+          contrasenia: 'wrongpassword',
+        })
+        .expect(401); // Unauthorized
+    });
+  });
+});
+```
+
+### Database Testing
+
+#### Using Test Database
+
+Create `backend/.env.test`:
+
+```env
+DATABASE_URL="mysql://root:password@localhost:3306/saludmap_test"
+JWT_SECRET="test-secret"
+```
+
+Update `package.json`:
+
+```json
+{
+  "scripts": {
+    "test:e2e": "dotenv -e .env.test -- jest --config ./test/jest-e2e.json"
+  }
+}
+```
+
+#### Test Data Factories
+
+Create reusable test data generators:
+
+**Location**: `backend/test/factories/user.factory.ts`
+
+```typescript
+import { PrismaClient } from '../../src/generated';
+import * as bcrypt from 'bcryptjs';
+
+const prisma = new PrismaClient();
+
+export async function createTestUser(overrides = {}) {
+  const defaultUser = {
+    nombre: 'Test',
+    apellido: 'User',
+    mail: `test${Date.now()}@example.com`,
+    contrasenia: await bcrypt.hash('password123', 10),
+    rol: 'usuario',
+  };
+
+  return await prisma.usuario.create({
+    data: { ...defaultUser, ...overrides },
+  });
+}
+
+export async function createTestEstablishment(overrides = {}) {
+  const defaultEstablishment = {
+    nombre: 'Test Hospital',
+    tipo: 'hospital',
+    lat: -34.6037,
+    lng: -58.3816,
+    direccion: 'Test Address',
+  };
+
+  return await prisma.establecimiento.create({
+    data: { ...defaultEstablishment, ...overrides },
+  });
+}
+```
+
+Usage:
+
+```typescript
+import { createTestUser, createTestEstablishment } from './factories';
+
+describe('Turnos', () => {
+  let user, establishment;
+
+  beforeAll(async () => {
+    user = await createTestUser();
+    establishment = await createTestEstablishment();
+  });
+
+  // Tests...
+});
+```
+
+---
+
+## Frontend Testing
+
+### Setup
+
+Install testing libraries:
+
+```bash
+cd Frontend
+npm install --save-dev vitest @testing-library/react @testing-library/jest-dom @testing-library/user-event jsdom
+```
+
+Update `package.json`:
+
+```json
+{
+  "scripts": {
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage"
+  }
+}
+```
+
+Create `vitest.config.js`:
+
+```javascript
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react-swc';
+
+export default defineConfig({
+  plugins: [react()],
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: './src/test/setup.js',
+  },
+});
+```
+
+Create `src/test/setup.js`:
+
+```javascript
+import { expect, afterEach } from 'vitest';
+import { cleanup } from '@testing-library/react';
+import * as matchers from '@testing-library/jest-dom/matchers';
+
+expect.extend(matchers);
+
+afterEach(() => {
+  cleanup();
+});
+```
+
+### Unit Tests
+
+#### Testing Components
+
+**Location**: `Frontend/src/components/LanguageSelector.test.jsx`
+
+```jsx
+import { describe, it, expect } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import LanguageSelector from './LanguageSelector';
+import { I18nextProvider } from 'react-i18next';
+import i18n from '../i18n';
+
+describe('LanguageSelector', () => {
+  const renderWithI18n = (component) => {
+    return render(
+      <I18nextProvider i18n={i18n}>
+        {component}
+      </I18nextProvider>
+    );
+  };
+
+  it('renders language selector', () => {
+    renderWithI18n(<LanguageSelector />);
+    expect(screen.getByRole('button')).toBeInTheDocument();
+  });
+
+  it('toggles language on click', () => {
+    renderWithI18n(<LanguageSelector />);
+    const button = screen.getByRole('button');
+    
+    const initialLang = i18n.language;
+    fireEvent.click(button);
+    
+    expect(i18n.language).not.toBe(initialLang);
+  });
+});
+```
+
+#### Testing Services
+
+**Location**: `Frontend/src/services/locationService.test.js`
+
+```javascript
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import locationService from './locationService';
+
+describe('locationService', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('should get current location from GPS', async () => {
+    const mockPosition = {
+      coords: {
+        latitude: -34.6037,
+        longitude: -58.3816,
+      },
+    };
+
+    global.navigator.geolocation = {
+      getCurrentPosition: vi.fn((success) => success(mockPosition)),
+    };
+
+    const location = await locationService.getCurrentPosition();
+
+    expect(location).toEqual({
+      lat: -34.6037,
+      lng: -58.3816,
+      source: 'gps',
+    });
+  });
+
+  it('should save location to localStorage', () => {
+    const location = {
+      lat: -34.6037,
+      lng: -58.3816,
+      source: 'manual',
+    };
+
+    locationService.updateLocation(location.lat, location.lng);
+
+    const saved = JSON.parse(localStorage.getItem('lastKnownLocation'));
+    expect(saved.lat).toBe(location.lat);
+    expect(saved.lng).toBe(location.lng);
+  });
+});
+```
+
+#### Testing API Services
+
+**Location**: `Frontend/src/components/Auth/services/authService.test.js`
+
+```javascript
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import axios from 'axios';
+import { login, register } from './authService';
+
+vi.mock('axios');
+
+describe('authService', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('login', () => {
+    it('should return user and token on success', async () => {
+      const mockResponse = {
+        data: {
+          user: { id: 1, nombre: 'Test', mail: 'test@example.com' },
+          token: 'mock-token',
+        },
+      };
+
+      axios.post.mockResolvedValue(mockResponse);
+
+      const result = await login('test@example.com', 'password123');
+
+      expect(result).toEqual(mockResponse.data);
+      expect(axios.post).toHaveBeenCalledWith(
+        expect.stringContaining('/usuarios/login'),
+        { mail: 'test@example.com', contrasenia: 'password123' }
+      );
+    });
+
+    it('should throw error on invalid credentials', async () => {
+      axios.post.mockRejectedValue(new Error('Unauthorized'));
+
+      await expect(login('test@example.com', 'wrong')).rejects.toThrow();
+    });
+  });
+});
+```
+
+### Integration Tests
+
+#### Testing User Flows
+
+**Location**: `Frontend/src/test/integration/appointment-flow.test.jsx`
+
+```jsx
+import { describe, it, expect, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import App from '../../App';
+import { AuthProvider } from '../../components/Auth/AuthContext';
+
+describe('Appointment Booking Flow', () => {
+  const renderApp = () => {
+    return render(
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    );
+  };
+
+  it('should complete appointment booking', async () => {
+    const user = userEvent.setup();
+    renderApp();
+
+    // 1. Login
+    const loginButton = screen.getByText(/login/i);
+    await user.click(loginButton);
+
+    const emailInput = screen.getByLabelText(/email/i);
+    const passwordInput = screen.getByLabelText(/password/i);
+
+    await user.type(emailInput, 'test@example.com');
+    await user.type(passwordInput, 'password123');
+    await user.click(screen.getByRole('button', { name: /submit/i }));
+
+    // 2. Navigate to appointments
+    await waitFor(() => {
+      expect(screen.getByText(/turnos/i)).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText(/turnos/i));
+
+    // 3. Book appointment
+    const bookButton = screen.getByText(/nuevo turno/i);
+    await user.click(bookButton);
+
+    // Fill form and submit
+    // ...
+
+    // 4. Verify success
+    await waitFor(() => {
+      expect(screen.getByText(/turno creado/i)).toBeInTheDocument();
+    });
+  });
+});
+```
+
+---
+
+## E2E Testing
+
+### Using Playwright
+
+Install Playwright:
+
+```bash
+cd Frontend
+npm install --save-dev @playwright/test
+npx playwright install
+```
+
+Create `playwright.config.js`:
+
+```javascript
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './e2e',
+  use: {
+    baseURL: 'http://localhost:5173',
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
+  },
+  webServer: {
+    command: 'npm run dev',
+    port: 5173,
+    reuseExistingServer: true,
+  },
+});
+```
+
+### E2E Test Example
+
+**Location**: `Frontend/e2e/user-registration.spec.js`
+
+```javascript
+import { test, expect } from '@playwright/test';
+
+test.describe('User Registration', () => {
+  test('should register new user', async ({ page }) => {
+    await page.goto('/');
+
+    // Click register button
+    await page.click('text=Registro');
+
+    // Fill form
+    await page.fill('input[name="nombre"]', 'John');
+    await page.fill('input[name="apellido"]', 'Doe');
+    await page.fill('input[name="mail"]', `test${Date.now()}@example.com`);
+    await page.fill('input[name="contrasenia"]', 'Password123!');
+
+    // Submit
+    await page.click('button[type="submit"]');
+
+    // Verify redirect to map
+    await expect(page).toHaveURL('/');
+    await expect(page.locator('text=John Doe')).toBeVisible();
+  });
+
+  test('should show error for duplicate email', async ({ page }) => {
+    await page.goto('/');
+    await page.click('text=Registro');
+
+    await page.fill('input[name="mail"]', 'existing@example.com');
+    // Fill other fields...
+
+    await page.click('button[type="submit"]');
+
+    await expect(page.locator('text=Email already exists')).toBeVisible();
+  });
+});
+```
+
+---
+
+## Testing Best Practices
+
+### General Principles
+
+1. **Test Behavior, Not Implementation**
+   - Test what users see and do
+   - Avoid testing internal state
+
+2. **Follow AAA Pattern**
+   - Arrange: Setup test data
+   - Act: Execute code under test
+   - Assert: Verify results
+
+3. **Keep Tests Independent**
+   - Each test should run in isolation
+   - Don't rely on test execution order
+
+4. **Use Descriptive Names**
+   ```javascript
+   it('should return 401 when password is incorrect')
+   it('should create appointment when all fields are valid')
+   ```
+
+5. **Test Edge Cases**
+   - Empty inputs
+   - Null values
+   - Large datasets
+   - Network failures
+
+### Backend Best Practices
+
+- Mock external dependencies (Gemini AI, Overpass API)
+- Use test database, not production
+- Clean up test data after tests
+- Test authentication and authorization
+- Validate input/output DTOs
+
+### Frontend Best Practices
+
+- Use Testing Library queries (getByRole, getByText)
+- Wait for asynchronous updates
+- Mock API calls with MSW (Mock Service Worker)
+- Test accessibility
+- Avoid testing implementation details
+
+---
+
+## Coverage Goals
+
+### Minimum Coverage Targets
+
+- **Unit Tests**: 70% code coverage
+- **Integration Tests**: All critical API endpoints
+- **E2E Tests**: All major user flows
+
+### Priority Testing Areas
+
+1. **Authentication** (Critical)
+   - Login/register
+   - JWT validation
+   - Password hashing
+
+2. **Appointments** (High Priority)
+   - Create appointment
+   - Cancel appointment
+   - View user appointments
+
+3. **Reviews** (High Priority)
+   - Create review
+   - View reviews
+   - Calculate ratings
+
+4. **Map Features** (Medium Priority)
+   - Search establishments
+   - Filter by type
+   - Geolocation
+
+5. **Chatbot** (Medium Priority)
+   - Send message
+   - Receive response
+   - Context handling
+
+---
+
+## Continuous Integration
+
+### GitHub Actions Example
+
+Create `.github/workflows/test.yml`:
+
+```yaml
+name: Run Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: saludmap_test
+        ports:
+          - 3306:3306
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: |
+          cd backend
+          npm ci
+      
+      - name: Generate Prisma Client
+        run: |
+          cd backend
+          npm run prisma:generate
+      
+      - name: Run tests
+        run: |
+          cd backend
+          npm run test:cov
+        env:
+          DATABASE_URL: mysql://root:password@localhost:3306/saludmap_test
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+
+  frontend-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: |
+          cd Frontend
+          npm ci
+      
+      - name: Run tests
+        run: |
+          cd Frontend
+          npm run test:coverage
+```
+
+---
+
+## Related Documentation
+
+- [Backend Structure](/development/backend-structure) - Backend organization
+- [Frontend Structure](/development/frontend-structure) - Frontend organization
+- [Contributing](/development/contributing) - Contribution guidelines

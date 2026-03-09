@@ -1,0 +1,84 @@
+---
+title: User Authentication
+description: Learn how to create an account and sign in to SaludMap
+---
+
+SaludMap provides user authentication to enable personalized features like booking appointments, writing reviews, and managing saved locations.
+
+## Creating an Account
+
+To access protected features in SaludMap, you'll need to create an account.
+
+<Steps>
+  <Step title="Trigger the registration modal">
+    When you try to access a protected feature (like writing a review or booking an appointment), the authentication modal will automatically appear. You can also click the "Register" or "Login" button in the navigation.
+  </Step>
+  
+  <Step title="Switch to registration mode">
+    If the login form is showing, click the "Registrarse" (Register) link at the bottom of the modal.
+  </Step>
+  
+  <Step title="Fill in your information">
+    Enter the following required information:
+    - **First Name** (Nombre)
+    - **Last Name** (Apellido)
+    - **Email** - Must be a valid email address
+    - **Password** (Contraseña)
+  </Step>
+  
+  <Step title="Submit the form">
+    Click the "Registrarse" button to create your account. If registration is successful, you'll be automatically logged in.
+  </Step>
+</Steps>
+
+## Signing In
+
+If you already have an account, you can sign in to access your personalized features.
+
+<Steps>
+  <Step title="Open the login modal">
+    Click the "Login" button or try to access a protected feature to trigger the authentication modal.
+  </Step>
+  
+  <Step title="Enter your credentials">
+    Provide your:
+    - **Email** - The email address you registered with
+    - **Password** - Your account password
+  </Step>
+  
+  <Step title="Submit the form">
+    Click the "Ingresar" (Login) button to sign in. Your session will be saved locally for future visits.
+  </Step>
+</Steps>
+
+## Session Management
+
+Once logged in:
+- Your user information is stored locally in your browser
+- A JWT token is saved for authenticating API requests
+- You remain logged in across browser sessions until you explicitly log out
+
+## Signing Out
+
+To sign out of your account:
+1. Click on your user profile or account menu
+2. Select "Logout" or "Cerrar sesión"
+3. Your session data will be cleared from local storage
+
+## Password Requirements
+
+- Passwords must be entered twice during registration to confirm
+- Use a strong password to protect your account
+- Password reset functionality may be available through the backend API
+
+## Protected Features
+
+The following features require authentication:
+- Writing reviews for healthcare facilities
+- Booking appointments (turnos)
+- Viewing your appointment history
+- Saving personalized preferences
+
+<Note>
+  If you encounter authentication errors, make sure all form fields are filled out correctly and your email follows the proper format (e.g., user@example.com).
+</Note>

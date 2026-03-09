@@ -1,0 +1,596 @@
+---
+title: Contributing Guidelines
+description: How to contribute to SaludMap development
+---
+
+## Welcome Contributors!
+
+Thank you for your interest in contributing to SaludMap! This guide will help you get started with contributing to the project.
+
+---
+
+## Code of Conduct
+
+### Our Pledge
+
+We are committed to providing a welcoming and inclusive environment for all contributors, regardless of background or identity.
+
+### Expected Behavior
+
+- Be respectful and considerate
+- Welcome newcomers and help them get started
+- Accept constructive criticism gracefully
+- Focus on what is best for the community
+- Show empathy towards other contributors
+
+### Unacceptable Behavior
+
+- Harassment or discriminatory language
+- Trolling or insulting comments
+- Public or private harassment
+- Publishing others' private information
+- Unprofessional conduct
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+Before contributing, ensure you have:
+
+1. Completed the [local setup](/development/local-setup)
+2. Read the [architecture documentation](/development/architecture)
+3. Familiarized yourself with the [frontend](/development/frontend-structure) and [backend](/development/backend-structure) structure
+4. Reviewed the [code style guide](/development/code-style)
+
+### First Time Setup
+
+```bash
+# 1. Fork the repository on GitHub
+# Click "Fork" button at https://github.com/GabyAvila1993/SaludMap
+
+# 2. Clone your fork
+git clone https://github.com/YOUR_USERNAME/SaludMap.git
+cd SaludMap
+
+# 3. Add upstream remote
+git remote add upstream https://github.com/GabyAvila1993/SaludMap.git
+
+# 4. Install dependencies
+cd backend && npm install
+cd ../Frontend && npm install
+
+# 5. Create a branch for your work
+git checkout -b feature/your-feature-name
+```
+
+---
+
+## Contribution Workflow
+
+### 1. Find or Create an Issue
+
+**Find Existing Issues**:
+- Browse [open issues](https://github.com/GabyAvila1993/SaludMap/issues)
+- Look for issues labeled `good first issue` or `help wanted`
+- Comment on the issue to claim it
+
+**Create New Issue**:
+- Check if the issue already exists
+- Use appropriate issue template
+- Provide clear description and steps to reproduce (for bugs)
+- Wait for maintainer approval before starting work
+
+### 2. Create a Branch
+
+Use descriptive branch names:
+
+```bash
+# Feature branches
+git checkout -b feature/add-appointment-reminders
+git checkout -b feature/improve-map-performance
+
+# Bug fix branches
+git checkout -b fix/login-validation-error
+git checkout -b fix/map-marker-crash
+
+# Documentation branches
+git checkout -b docs/update-api-guide
+```
+
+### 3. Make Your Changes
+
+- Write clean, maintainable code
+- Follow the [code style guide](/development/code-style)
+- Add tests for new features
+- Update documentation as needed
+- Keep commits atomic and focused
+
+### 4. Commit Your Changes
+
+Use clear, descriptive commit messages:
+
+```bash
+# Good commit messages
+git commit -m "feat: add appointment reminder notifications"
+git commit -m "fix: resolve login validation error on empty email"
+git commit -m "docs: update API authentication guide"
+git commit -m "refactor: simplify map marker rendering logic"
+
+# Bad commit messages (avoid these)
+git commit -m "update"
+git commit -m "fix bug"
+git commit -m "changes"
+```
+
+#### Commit Message Format
+
+Follow the [Conventional Commits](https://www.conventionalcommits.org/) specification:
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+**Types**:
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation changes
+- `style`: Code style changes (formatting, no logic change)
+- `refactor`: Code refactoring
+- `test`: Adding or updating tests
+- `chore`: Maintenance tasks
+- `perf`: Performance improvements
+
+**Examples**:
+```
+feat(appointments): add email notifications for upcoming appointments
+
+Implements email reminders 24 hours before scheduled appointments.
+Users can opt-out in settings.
+
+Closes #123
+```
+
+### 5. Push to Your Fork
+
+```bash
+git push origin feature/your-feature-name
+```
+
+### 6. Create a Pull Request
+
+1. Go to your fork on GitHub
+2. Click "New Pull Request"
+3. Select your branch
+4. Fill out the PR template:
+   - Clear description of changes
+   - Link related issues
+   - Add screenshots (for UI changes)
+   - List breaking changes (if any)
+5. Request review from maintainers
+
+### 7. Code Review Process
+
+- Respond to feedback promptly
+- Make requested changes
+- Push updates to the same branch
+- Re-request review after updates
+
+### 8. Merge
+
+Once approved:
+- Maintainer will merge your PR
+- Your branch will be deleted automatically
+- Celebrate your contribution!
+
+---
+
+## Types of Contributions
+
+### Bug Fixes
+
+1. Verify the bug exists
+2. Create an issue if one doesn't exist
+3. Write a test that reproduces the bug
+4. Fix the bug
+5. Verify the test now passes
+6. Submit PR with issue reference
+
+### New Features
+
+1. Discuss the feature in an issue first
+2. Wait for maintainer approval
+3. Design the feature (if complex)
+4. Implement the feature
+5. Add tests
+6. Update documentation
+7. Submit PR
+
+### Documentation
+
+- Fix typos or unclear explanations
+- Add code examples
+- Improve existing guides
+- Create new tutorials
+- Update outdated information
+
+### Testing
+
+- Add missing tests
+- Improve test coverage
+- Refactor existing tests
+- Add E2E tests for user flows
+
+### Performance Improvements
+
+- Profile the application first
+- Measure before and after
+- Include benchmarks in PR
+- Ensure no functionality breaks
+
+---
+
+## Development Guidelines
+
+### Backend Development
+
+#### Adding a New API Endpoint
+
+1. **Create/Update DTO**:
+   ```typescript
+   // backend/src/module/dto/create-item.dto.ts
+   export class CreateItemDto {
+     @IsString()
+     name: string;
+
+     @IsOptional()
+     @IsString()
+     description?: string;
+   }
+   ```
+
+2. **Add Service Method**:
+   ```typescript
+   // backend/src/module/module.service.ts
+   async create(data: CreateItemDto) {
+     return await this.prisma.item.create({ data });
+   }
+   ```
+
+3. **Add Controller Endpoint**:
+   ```typescript
+   // backend/src/module/module.controller.ts
+   @Post()
+   @UseGuards(JwtAuthGuard)
+   async create(@Body() data: CreateItemDto) {
+     return await this.service.create(data);
+   }
+   ```
+
+4. **Write Tests**:
+   ```typescript
+   // backend/src/module/module.service.spec.ts
+   it('should create item', async () => {
+     // Test implementation
+   });
+   ```
+
+#### Adding a Database Model
+
+1. **Update Prisma Schema**:
+   ```prisma
+   // backend/prisma/schema.prisma
+   model NewModel {
+     id        Int      @id @default(autoincrement())
+     name      String
+     createdAt DateTime @default(now())
+   }
+   ```
+
+2. **Generate Prisma Client**:
+   ```bash
+   cd backend
+   npm run prisma:generate
+   npm run prisma:push  # or create migration
+   ```
+
+3. **Update Related Services**:
+   - Add CRUD operations
+   - Update relationships
+   - Add business logic
+
+### Frontend Development
+
+#### Adding a New Component
+
+1. **Create Component File**:
+   ```jsx
+   // Frontend/src/components/MyComponent.jsx
+   import React from 'react';
+
+   function MyComponent({ prop1, prop2 }) {
+     return (
+       <div className="my-component">
+         {/* Component content */}
+       </div>
+     );
+   }
+
+   export default MyComponent;
+   ```
+
+2. **Add Styles** (if needed):
+   ```css
+   /* Frontend/src/components/MyComponent.css */
+   .my-component {
+     /* Styles */
+   }
+   ```
+
+3. **Write Tests**:
+   ```jsx
+   // Frontend/src/components/MyComponent.test.jsx
+   import { render, screen } from '@testing-library/react';
+   import MyComponent from './MyComponent';
+
+   describe('MyComponent', () => {
+     it('renders correctly', () => {
+       render(<MyComponent />);
+       // Assertions
+     });
+   });
+   ```
+
+4. **Update Documentation**:
+   - Add to component documentation
+   - Include usage examples
+
+#### Adding i18n Translations
+
+1. **Add to English**:
+   ```json
+   // Frontend/src/i18n/locales/en.json
+   {
+     "myFeature": {
+       "title": "My Feature",
+       "description": "Description of my feature"
+     }
+   }
+   ```
+
+2. **Add to Spanish**:
+   ```json
+   // Frontend/src/i18n/locales/es.json
+   {
+     "myFeature": {
+       "title": "Mi Funcionalidad",
+       "description": "Descripción de mi funcionalidad"
+     }
+   }
+   ```
+
+3. **Use in Component**:
+   ```jsx
+   const { t } = useTranslation();
+   return <h1>{t('myFeature.title')}</h1>;
+   ```
+
+---
+
+## Pull Request Guidelines
+
+### PR Checklist
+
+Before submitting, ensure:
+
+- [ ] Code follows the [style guide](/development/code-style)
+- [ ] All tests pass (`npm test`)
+- [ ] New features have tests
+- [ ] Documentation is updated
+- [ ] Commit messages follow convention
+- [ ] No merge conflicts
+- [ ] PR description is clear
+- [ ] Screenshots added (for UI changes)
+- [ ] Breaking changes are documented
+
+### PR Title Format
+
+```
+type(scope): brief description
+```
+
+Examples:
+- `feat(appointments): add email reminders`
+- `fix(auth): resolve JWT expiration issue`
+- `docs(api): update authentication guide`
+
+### PR Description Template
+
+```markdown
+## Description
+Brief description of changes
+
+## Type of Change
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Breaking change
+- [ ] Documentation update
+
+## Related Issues
+Closes #123
+Related to #456
+
+## Changes Made
+- Change 1
+- Change 2
+- Change 3
+
+## Screenshots (if applicable)
+![Screenshot](url)
+
+## Testing
+- [ ] Unit tests added/updated
+- [ ] Integration tests added/updated
+- [ ] Manually tested
+
+## Checklist
+- [ ] Code follows style guide
+- [ ] Documentation updated
+- [ ] Tests pass
+- [ ] No breaking changes (or documented)
+```
+
+---
+
+## Review Process
+
+### What Reviewers Look For
+
+1. **Functionality**
+   - Does it work as intended?
+   - Are edge cases handled?
+   - Are there any bugs?
+
+2. **Code Quality**
+   - Is it readable and maintainable?
+   - Does it follow best practices?
+   - Is it well-structured?
+
+3. **Testing**
+   - Are there adequate tests?
+   - Do tests cover edge cases?
+   - Do all tests pass?
+
+4. **Documentation**
+   - Is code documented?
+   - Are user-facing changes documented?
+   - Are breaking changes noted?
+
+5. **Performance**
+   - Are there performance concerns?
+   - Could it be optimized?
+   - Does it scale?
+
+### Responding to Feedback
+
+- Be open to suggestions
+- Ask for clarification if needed
+- Make requested changes promptly
+- Thank reviewers for their time
+- Learn from the feedback
+
+---
+
+## Issue Reporting
+
+### Bug Reports
+
+Include:
+- Clear, descriptive title
+- Steps to reproduce
+- Expected behavior
+- Actual behavior
+- Environment (OS, browser, Node version)
+- Screenshots/error messages
+- Relevant logs
+
+**Template**:
+```markdown
+**Description**
+Clear description of the bug
+
+**To Reproduce**
+1. Go to '...'
+2. Click on '...'
+3. Scroll down to '...'
+4. See error
+
+**Expected Behavior**
+What should happen
+
+**Actual Behavior**
+What actually happens
+
+**Environment**
+- OS: [e.g. Windows 11]
+- Browser: [e.g. Chrome 120]
+- Node: [e.g. 18.17.0]
+- App Version: [e.g. 1.0.0]
+
+**Screenshots**
+[Add screenshots]
+
+**Additional Context**
+Any other relevant information
+```
+
+### Feature Requests
+
+Include:
+- Clear description
+- Use case
+- Expected behavior
+- Why it's needed
+- Proposed implementation (optional)
+
+---
+
+## Community
+
+### Communication Channels
+
+- **GitHub Issues**: Bug reports, feature requests
+- **GitHub Discussions**: General questions, ideas
+- **Pull Requests**: Code contributions
+
+### Getting Help
+
+- Check existing documentation
+- Search closed issues
+- Ask in GitHub Discussions
+- Be patient and respectful
+
+---
+
+## Recognition
+
+Contributors are recognized in:
+- GitHub contributors list
+- Release notes
+- Project documentation (for significant contributions)
+
+---
+
+## License
+
+By contributing, you agree that your contributions will be licensed under the same license as the project.
+
+---
+
+## Questions?
+
+If you have questions about contributing:
+1. Check this guide and other documentation
+2. Search existing issues and discussions
+3. Open a new discussion on GitHub
+4. Reach out to maintainers
+
+---
+
+## Thank You!
+
+Your contributions make SaludMap better for everyone. We appreciate your time and effort!
+
+---
+
+## Related Documentation
+
+- [Code Style](/development/code-style) - Coding standards and conventions
+- [Testing](/development/testing) - Testing guidelines
+- [Architecture](/development/architecture) - System architecture
+- [Local Setup](/development/local-setup) - Development environment setup

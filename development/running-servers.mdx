@@ -1,0 +1,698 @@
+---
+title: Running Development Servers
+description: Guide to running frontend and backend servers for development
+---
+
+## Overview
+
+SaludMap requires running two development servers simultaneously:
+1. **Backend** (NestJS) - API server on port 3000
+2. **Frontend** (React + Vite) - Development server on port 5173
+
+---
+
+## Quick Start
+
+### Terminal 1: Backend Server
+
+```bash
+cd backend
+npm run start:dev
+```
+
+**Expected Output**:
+```
+[Nest] LOG [NestFactory] Starting Nest application...
+[Nest] LOG [InstanceLoader] AppModule dependencies initialized
+[Nest] LOG [InstanceLoader] ConfigModule dependencies initialized
+[Nest] LOG [NestApplication] Nest application successfully started
+```
+
+Server runs at: `http://localhost:3000`
+API base: `http://localhost:3000/api`
+
+### Terminal 2: Frontend Server
+
+```bash
+cd Frontend
+npm run dev
+```
+
+**Expected Output**:
+```
+VITE v7.1.7  ready in 1234 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+  ➜  press h + enter to show help
+```
+
+Application opens at: `http://localhost:5173`
+
+---
+
+## Backend Server
+
+### Development Mode
+
+Runs with hot reload - automatically restarts when files change:
+
+```bash
+cd backend
+npm run start:dev
+```
+
+**Features**:
+- Auto-restart on file changes
+- TypeScript compilation on the fly
+- Detailed error messages
+- Source maps for debugging
+
+### Debug Mode
+
+Runs with debugger attached:
+
+```bash
+npm run start:debug
+```
+
+Connect debugger:
+1. Open Chrome DevTools: `chrome://inspect`
+2. Click "Open dedicated DevTools for Node"
+3. Set breakpoints in VS Code
+
+### Standard Mode (No Hot Reload)
+
+```bash
+npm run start
+```
+
+Requires manual restart after code changes.
+
+### Production Mode
+
+First build, then run:
+
+```bash
+# Build the application
+npm run build
+
+# Run production build
+npm run start:prod
+```
+
+### Available Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run start` | Start in standard mode |
+| `npm run start:dev` | Start with hot reload |
+| `npm run start:debug` | Start with debugger |
+| `npm run start:prod` | Run production build |
+| `npm run build` | Build for production |
+| `npm run prisma:generate` | Generate Prisma client |
+| `npm run prisma:push` | Push schema to database |
+| `npm run prisma:studio` | Open Prisma Studio GUI |
+
+---
+
+## Frontend Server
+
+### Development Mode
+
+Runs Vite dev server with hot module replacement (HMR):
+
+```bash
+cd Frontend
+npm run dev
+```
+
+**Features**:
+- Instant hot module replacement
+- Fast refresh for React components
+- On-demand compilation
+- Rich error overlay
+- Source maps
+
+### Custom Port
+
+If port 5173 is already in use:
+
+```bash
+npm run dev -- --port 3001
+```
+
+Or configure in `vite.config.js`:
+
+```javascript
+export default defineConfig({
+  server: {
+    port: 3001,
+  },
+});
+```
+
+### Network Access
+
+Allow access from other devices on your network:
+
+```bash
+npm run dev -- --host
+```
+
+Then access via:
+- Local: `http://localhost:5173`
+- Network: `http://192.168.x.x:5173`
+
+### Preview Production Build
+
+Build and preview production version:
+
+```bash
+# Build first
+npm run build
+
+# Preview the build
+npm run preview
+```
+
+Preview server runs at: `http://localhost:4173`
+
+### Available Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm run preview` | Preview production build |
+| `npm run lint` | Run ESLint |
+
+---
+
+## Running Both Servers
+
+### Option 1: Multiple Terminals
+
+The recommended approach for development:
+
+**Terminal 1 - Backend**:
+```bash
+cd backend
+npm run start:dev
+```
+
+**Terminal 2 - Frontend**:
+```bash
+cd Frontend
+npm run dev
+```
+
+**Terminal 3 - Additional Tools (optional)**:
+```bash
+cd backend
+npm run prisma:studio  # Database GUI
+```
+
+### Option 2: Using Tmux (Linux/macOS)
+
+Split terminal into multiple panes:
+
+```bash
+# Start tmux
+tmux
+
+# Split vertically (Ctrl+b, then %)
+# Terminal 1: cd backend && npm run start:dev
+
+# Split horizontally (Ctrl+b, then ")
+# Terminal 2: cd Frontend && npm run dev
+
+# Navigate between panes: Ctrl+b, then arrow keys
+```
+
+### Option 3: Using VS Code Tasks
+
+Create `.vscode/tasks.json`:
+
+```json
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start Backend",
+      "type": "shell",
+      "command": "npm run start:dev",
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Start Frontend",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": {
+        "cwd": "${workspaceFolder}/Frontend"
+      },
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Start All",
+      "dependsOn": ["Start Backend", "Start Frontend"],
+      "problemMatcher": []
+    }
+  ]
+}
+```
+
+Run with: `Terminal > Run Task > Start All`
+
+### Option 4: Using Concurrently (Package)
+
+Install in project root:
+
+```bash
+cd SaludMap
+npm install --save-dev concurrently
+```
+
+Add to root `package.json`:
+
+```json
+{
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run start:dev",
+    "dev:frontend": "cd Frontend && npm run dev"
+  }
+}
+```
+
+Run:
+```bash
+npm run dev
+```
+
+---
+
+## Verifying Servers
+
+### Check Backend Health
+
+```bash
+# Test root endpoint
+curl http://localhost:3000/api
+
+# Or open in browser
+open http://localhost:3000/api
+```
+
+Expected response:
+```json
+{"message": "SaludMap API is running"}
+```
+
+### Check Frontend
+
+Open browser to: `http://localhost:5173`
+
+You should see:
+- SaludMap logo
+- Navigation bar
+- Map loading or location permission prompt
+
+### Check Database Connection
+
+```bash
+cd backend
+npm run prisma:studio
+```
+
+Opens Prisma Studio at `http://localhost:5555`
+
+---
+
+## Common Issues
+
+### Port Already in Use
+
+**Backend (port 3000)**:
+
+```bash
+# Find process
+lsof -i :3000  # macOS/Linux
+netstat -ano | findstr :3000  # Windows
+
+# Kill process
+kill -9 <PID>  # macOS/Linux
+taskkill /PID <PID> /F  # Windows
+
+# Or change port in backend/.env
+PORT=3001
+```
+
+**Frontend (port 5173)**:
+
+```bash
+# Find and kill
+lsof -i :5173
+kill -9 <PID>
+
+# Or use different port
+npm run dev -- --port 3002
+```
+
+### Backend Won't Start
+
+**Check environment variables**:
+```bash
+cd backend
+cat .env  # Verify DATABASE_URL, JWT_SECRET, etc.
+```
+
+**Check database connection**:
+```bash
+mysql -u root -p
+> USE saludmap;
+> SHOW TABLES;
+```
+
+**Regenerate Prisma client**:
+```bash
+cd backend
+rm -rf generated node_modules/.prisma
+npm run prisma:generate
+```
+
+**Check for TypeScript errors**:
+```bash
+cd backend
+npx tsc --noEmit
+```
+
+### Frontend Won't Start
+
+**Check API URL**:
+```bash
+cd Frontend
+cat .env  # Verify VITE_API_URL
+```
+
+**Clear node_modules**:
+```bash
+cd Frontend
+rm -rf node_modules package-lock.json
+npm install
+```
+
+**Clear Vite cache**:
+```bash
+rm -rf node_modules/.vite
+npm run dev
+```
+
+### Hot Reload Not Working
+
+**Backend**:
+- Check that files are being saved
+- Verify no TypeScript compilation errors
+- Restart the server manually
+
+**Frontend**:
+- Check browser console for errors
+- Hard refresh: `Ctrl+Shift+R` (or `Cmd+Shift+R`)
+- Clear Vite cache and restart
+
+### CORS Errors
+
+If frontend can't reach backend:
+
+1. Check backend CORS config in `main.ts:15`:
+   ```typescript
+   app.enableCors({
+     origin: '*',  // Or 'http://localhost:5173'
+     methods: 'GET,POST,PUT,DELETE',
+     credentials: true,
+   });
+   ```
+
+2. Verify API URL in frontend:
+   ```bash
+   cat Frontend/.env
+   # Should be: VITE_API_URL=http://localhost:3000/api
+   ```
+
+3. Test backend directly:
+   ```bash
+   curl http://localhost:3000/api
+   ```
+
+### Database Connection Failed
+
+```bash
+# Verify MySQL is running
+mysql -u root -p
+
+# Check DATABASE_URL format
+DATABASE_URL="mysql://USER:PASSWORD@HOST:PORT/DATABASE"
+
+# Test connection
+cd backend
+npx prisma db pull
+```
+
+---
+
+## Development Workflow
+
+### Typical Development Session
+
+1. **Start servers**:
+   ```bash
+   # Terminal 1
+   cd backend && npm run start:dev
+   
+   # Terminal 2
+   cd Frontend && npm run dev
+   ```
+
+2. **Make code changes**:
+   - Edit files in your IDE
+   - Save files
+   - Watch hot reload in action
+
+3. **Test changes**:
+   - Frontend: Changes appear instantly in browser
+   - Backend: API restarts automatically
+
+4. **Check database**:
+   ```bash
+   # Terminal 3
+   cd backend && npm run prisma:studio
+   ```
+
+5. **View logs**:
+   - Backend logs appear in Terminal 1
+   - Frontend logs in Terminal 2 and browser console
+
+### After Schema Changes
+
+```bash
+cd backend
+
+# 1. Update schema.prisma
+vim prisma/schema.prisma
+
+# 2. Push to database
+npm run prisma:push
+
+# 3. Regenerate client
+npm run prisma:generate
+
+# Server will auto-restart
+```
+
+### After Package Installation
+
+```bash
+# Backend
+cd backend
+npm install some-package
+# Server restarts automatically
+
+# Frontend
+cd Frontend
+npm install some-package
+# Vite will prompt to restart - press 'r'
+```
+
+---
+
+## Performance Tips
+
+### Backend
+
+1. **Disable unnecessary logs**:
+   ```typescript
+   // main.ts - Comment out console.log statements
+   ```
+
+2. **Use TypeScript project references**:
+   Faster compilation for large projects
+
+3. **Exclude files from watch**:
+   ```json
+   // nest-cli.json
+   {
+     "watchAssets": true,
+     "compilerOptions": {
+       "watchAssets": true,
+       "assets": ["**/*.prisma"],
+       "watchIgnore": ["node_modules", "dist", "generated"]
+     }
+   }
+   ```
+
+### Frontend
+
+1. **Enable React Fast Refresh**:
+   Already configured in Vite with SWC
+
+2. **Optimize dependencies**:
+   ```javascript
+   // vite.config.js
+   export default defineConfig({
+     optimizeDeps: {
+       include: ['react', 'react-dom', 'leaflet'],
+     },
+   });
+   ```
+
+3. **Use browser dev tools**:
+   - React DevTools extension
+   - Network tab for API calls
+   - Console for errors
+
+---
+
+## Environment-Specific Configurations
+
+### Development
+
+**Backend (.env)**:
+```env
+NODE_ENV=development
+PORT=3000
+DATABASE_URL="mysql://root:password@localhost:3306/saludmap"
+JWT_SECRET="dev-secret-key"
+```
+
+**Frontend (.env)**:
+```env
+VITE_API_URL=http://localhost:3000/api
+```
+
+### Staging
+
+**Backend (.env.staging)**:
+```env
+NODE_ENV=staging
+PORT=3000
+DATABASE_URL="mysql://user:pass@staging-db.com:3306/saludmap"
+JWT_SECRET="staging-secret-key"
+```
+
+**Frontend (.env.staging)**:
+```env
+VITE_API_URL=https://staging-api.saludmap.com/api
+```
+
+### Production
+
+See deployment documentation (coming soon).
+
+---
+
+## Useful Commands Reference
+
+### Backend
+
+```bash
+# Start development server
+npm run start:dev
+
+# Build for production
+npm run build
+
+# Run production
+npm run start:prod
+
+# Database commands
+npm run prisma:generate   # Generate Prisma client
+npm run prisma:push        # Push schema to DB
+npm run prisma:studio      # Open DB GUI
+npx prisma migrate dev     # Create migration
+
+# Code quality
+npm run lint               # Run ESLint
+npm run format             # Format with Prettier
+npm run test               # Run tests
+```
+
+### Frontend
+
+```bash
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+
+# Code quality
+npm run lint               # Run ESLint
+```
+
+### Both
+
+```bash
+# Install dependencies
+npm install
+
+# Clean install
+rm -rf node_modules package-lock.json
+npm install
+
+# Update packages
+npm update
+
+# Check outdated packages
+npm outdated
+```
+
+---
+
+## Next Steps
+
+Now that your servers are running:
+
+1. Open `http://localhost:5173` in your browser
+2. Register a new user account
+3. Explore the map interface
+4. Book an appointment
+5. Try the chatbot feature
+6. Review the [testing guide](/development/testing)
+7. Check out [contribution guidelines](/development/contributing)
+
+---
+
+## Related Documentation
+
+- [Local Setup](/development/local-setup) - Initial setup guide
+- [Frontend Structure](/development/frontend-structure) - Frontend code organization
+- [Backend Structure](/development/backend-structure) - Backend code organization
+- [Testing](/development/testing) - Testing strategies

@@ -1,0 +1,1049 @@
+---
+title: Code Style and Conventions
+description: Coding standards and best practices for SaludMap
+---
+
+## Overview
+
+This guide outlines the coding standards and conventions used in SaludMap. Following these guidelines ensures consistency and maintainability across the codebase.
+
+---
+
+## General Principles
+
+### Code Quality
+
+1. **Readability First**: Code is read more than it's written
+2. **Keep It Simple**: Avoid unnecessary complexity
+3. **DRY (Don't Repeat Yourself)**: Extract common logic
+4. **YAGNI (You Aren't Gonna Need It)**: Don't add features speculatively
+5. **SOLID Principles**: Follow object-oriented design principles
+
+### Naming Conventions
+
+- **Be Descriptive**: Names should clearly indicate purpose
+- **Avoid Abbreviations**: Use full words unless commonly understood
+- **Consistent Terminology**: Use the same terms throughout codebase
+
+---
+
+## TypeScript/JavaScript
+
+### Naming Conventions
+
+#### Variables and Functions
+
+```typescript
+// Use camelCase for variables and functions
+const userName = 'John Doe';
+const userAge = 25;
+
+function getUserById(id: number) {
+  return database.users.find(user => user.id === id);
+}
+
+// Use meaningful names
+// Good
+const appointmentDate = new Date();
+const isUserAuthenticated = true;
+
+// Bad
+const d = new Date();
+const flag = true;
+```
+
+#### Constants
+
+```typescript
+// Use UPPER_SNAKE_CASE for constants
+const MAX_RETRY_ATTEMPTS = 3;
+const API_BASE_URL = 'http://localhost:3000/api';
+const DEFAULT_PAGE_SIZE = 20;
+```
+
+#### Classes and Interfaces
+
+```typescript
+// Use PascalCase for classes and interfaces
+class UserService {
+  constructor() {}
+}
+
+interface AppointmentData {
+  id: number;
+  userId: number;
+  date: Date;
+}
+
+// Prefix interfaces with 'I' only if necessary for disambiguation
+interface IRepository<T> {
+  findAll(): Promise<T[]>;
+  findById(id: number): Promise<T>;
+}
+```
+
+#### Types
+
+```typescript
+// Use PascalCase for type aliases
+type UserId = number;
+type UserRole = 'admin' | 'usuario';
+
+type ApiResponse<T> = {
+  data: T;
+  error?: string;
+};
+```
+
+### Code Structure
+
+#### File Organization
+
+```typescript
+// 1. Imports (grouped and sorted)
+// External libraries
+import { Injectable } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
+
+// Internal imports
+import { CreateUserDto } from './dto/create-user.dto';
+import { UserRepository } from './user.repository';
+
+// 2. Types and Interfaces
+interface ServiceConfig {
+  timeout: number;
+}
+
+// 3. Constants
+const DEFAULT_TIMEOUT = 5000;
+
+// 4. Class/Function Implementation
+@Injectable()
+export class UserService {
+  // Implementation
+}
+
+// 5. Exports
+export { UserService };
+```
+
+#### Function Length
+
+```typescript
+// Keep functions short and focused (under 50 lines)
+// Good - Single responsibility
+function validateUserEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, 10);
+}
+
+// Bad - Too many responsibilities
+function createUser(userData: any): Promise<User> {
+  // Validate email
+  // Hash password
+  // Check for duplicates
+  // Create user
+  // Send welcome email
+  // Log creation
+  // ... (too many responsibilities)
+}
+```
+
+### TypeScript Best Practices
+
+#### Type Annotations
+
+```typescript
+// Always use type annotations for function parameters and return types
+function calculateTotal(price: number, quantity: number): number {
+  return price * quantity;
+}
+
+// Use interfaces for object shapes
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+function getUser(id: number): Promise<User> {
+  // Implementation
+}
+
+// Avoid 'any' - use specific types
+// Bad
+function processData(data: any): any {
+  return data;
+}
+
+// Good
+function processData(data: UserData): ProcessedResult {
+  return { processed: true, data };
+}
+```
+
+#### Null Handling
+
+```typescript
+// Use optional chaining and nullish coalescing
+const userName = user?.profile?.name ?? 'Guest';
+const userAge = user?.age ?? 0;
+
+// Explicit null checks for clarity
+if (user === null || user === undefined) {
+  throw new Error('User not found');
+}
+
+// Better - use optional chaining
+if (!user) {
+  throw new Error('User not found');
+}
+```
+
+### Async/Await
+
+```typescript
+// Prefer async/await over promises
+// Good
+async function fetchUserData(id: number): Promise<User> {
+  try {
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      throw new Error('User not found');
+    }
+    return user;
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    throw error;
+  }
+}
+
+// Avoid callback hell
+// Bad
+function fetchUserData(id, callback) {
+  database.query('SELECT * FROM users', (err, result) => {
+    if (err) callback(err);
+    else {
+      processUser(result, (err, processed) => {
+        if (err) callback(err);
+        else callback(null, processed);
+      });
+    }
+  });
+}
+```
+
+### Error Handling
+
+```typescript
+// Use try-catch for async operations
+async function createAppointment(data: CreateAppointmentDto) {
+  try {
+    return await prisma.turno.create({ data });
+  } catch (error) {
+    if (error.code === 'P2002') {
+      throw new ConflictException('Appointment already exists');
+    }
+    throw new InternalServerErrorException('Failed to create appointment');
+  }
+}
+
+// Create custom error classes
+class ValidationError extends Error {
+  constructor(message: string, public field: string) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
+
+// Use error boundaries in React
+class ErrorBoundary extends React.Component {
+  componentDidCatch(error, errorInfo) {
+    console.error('Error caught:', error, errorInfo);
+  }
+}
+```
+
+---
+
+## NestJS Backend
+
+### Module Structure
+
+```typescript
+// Each module should be self-contained
+@Module({
+  imports: [
+    // External modules
+  ],
+  controllers: [
+    // Module controllers
+  ],
+  providers: [
+    // Services, repositories, etc.
+  ],
+  exports: [
+    // What to expose to other modules
+  ],
+})
+export class MyModule {}
+```
+
+### Controllers
+
+```typescript
+// Keep controllers thin - delegate to services
+@Controller('users')
+export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
+
+  @Get()
+  @UseGuards(JwtAuthGuard)
+  async findAll(): Promise<User[]> {
+    return await this.usersService.findAll();
+  }
+
+  @Post()
+  @UsePipes(new ValidationPipe())
+  async create(@Body() createUserDto: CreateUserDto): Promise<User> {
+    return await this.usersService.create(createUserDto);
+  }
+
+  // Use descriptive HTTP methods and status codes
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remove(@Param('id') id: number): Promise<void> {
+    await this.usersService.remove(id);
+  }
+}
+```
+
+### Services
+
+```typescript
+// Services contain business logic
+@Injectable()
+export class UsersService {
+  constructor(private prisma: PrismaClient) {}
+
+  // Document complex logic
+  /**
+   * Creates a new user with hashed password
+   * @param userData User registration data
+   * @returns Created user without password
+   * @throws ConflictException if email already exists
+   */
+  async create(userData: CreateUserDto): Promise<User> {
+    // Check for existing user
+    const existing = await this.prisma.usuario.findUnique({
+      where: { mail: userData.mail },
+    });
+
+    if (existing) {
+      throw new ConflictException('Email already registered');
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(userData.contrasenia, 10);
+
+    // Create user
+    const user = await this.prisma.usuario.create({
+      data: {
+        ...userData,
+        contrasenia: hashedPassword,
+      },
+    });
+
+    // Remove password from response
+    const { contrasenia, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
+}
+```
+
+### DTOs (Data Transfer Objects)
+
+```typescript
+// Use class-validator decorators
+export class CreateUserDto {
+  @IsString()
+  @MinLength(2)
+  @MaxLength(50)
+  nombre: string;
+
+  @IsString()
+  @MinLength(2)
+  @MaxLength(50)
+  apellido: string;
+
+  @IsEmail()
+  mail: string;
+
+  @IsString()
+  @MinLength(6)
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
+    message: 'Password must contain uppercase, lowercase, and number',
+  })
+  contrasenia: string;
+
+  @IsOptional()
+  @IsEnum(['usuario', 'admin'])
+  rol?: string;
+}
+
+// Separate DTOs for different operations
+export class UpdateUserDto {
+  @IsOptional()
+  @IsString()
+  nombre?: string;
+
+  @IsOptional()
+  @IsString()
+  apellido?: string;
+}
+```
+
+### Guards
+
+```typescript
+// Keep guards focused and reusable
+@Injectable()
+export class RolesGuard implements CanActivate {
+  constructor(private reflector: Reflector) {}
+
+  canActivate(context: ExecutionContext): boolean {
+    const requiredRoles = this.reflector.get<string[]>(
+      'roles',
+      context.getHandler(),
+    );
+
+    if (!requiredRoles) {
+      return true;
+    }
+
+    const request = context.switchToHttp().getRequest();
+    const user = request.user;
+
+    return requiredRoles.includes(user?.rol);
+  }
+}
+```
+
+---
+
+## React Frontend
+
+### Component Structure
+
+```jsx
+// Functional components with hooks
+import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import PropTypes from 'prop-types';
+
+/**
+ * UserProfile component displays user information
+ * @param {Object} props Component props
+ * @param {Object} props.user User object
+ * @param {Function} props.onUpdate Callback when user is updated
+ */
+function UserProfile({ user, onUpdate }) {
+  const { t } = useTranslation();
+  const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    // Side effects here
+  }, [user]);
+
+  const handleSave = async () => {
+    try {
+      await onUpdate(user);
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Failed to update user:', error);
+    }
+  };
+
+  return (
+    <div className="user-profile">
+      {/* Component JSX */}
+    </div>
+  );
+}
+
+// PropTypes for type checking
+UserProfile.propTypes = {
+  user: PropTypes.shape({
+    id: PropTypes.number.isRequired,
+    nombre: PropTypes.string.isRequired,
+    email: PropTypes.string.isRequired,
+  }).isRequired,
+  onUpdate: PropTypes.func.isRequired,
+};
+
+export default UserProfile;
+```
+
+### Hooks
+
+```jsx
+// Custom hooks for reusable logic
+import { useState, useEffect } from 'react';
+
+/**
+ * Custom hook for fetching data
+ * @param {string} url API endpoint
+ * @returns {Object} { data, loading, error }
+ */
+function useFetch(url) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(url);
+        const json = await response.json();
+        setData(json);
+      } catch (err) {
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [url]);
+
+  return { data, loading, error };
+}
+
+// Usage
+function MyComponent() {
+  const { data, loading, error } = useFetch('/api/users');
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return <div>{/* Render data */}</div>;
+}
+```
+
+### State Management
+
+```jsx
+// Use useState for local state
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={() => setCount(count + 1)}>Increment</button>
+    </div>
+  );
+}
+
+// Use useReducer for complex state
+function TodoList() {
+  const [state, dispatch] = useReducer(todoReducer, initialState);
+
+  const addTodo = (text) => {
+    dispatch({ type: 'ADD_TODO', payload: text });
+  };
+
+  return <div>{/* Render todos */}</div>;
+}
+
+// Use Context for global state
+const AuthContext = React.createContext();
+
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+
+  const login = async (credentials) => {
+    const user = await authService.login(credentials);
+    setUser(user);
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, login }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+```
+
+### Event Handlers
+
+```jsx
+// Prefix event handlers with 'handle'
+function Form() {
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    // Handle form submission
+  };
+
+  const handleInputChange = (event) => {
+    const { name, value } = event.target;
+    // Handle input change
+  };
+
+  const handleButtonClick = () => {
+    // Handle button click
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input onChange={handleInputChange} />
+      <button onClick={handleButtonClick}>Submit</button>
+    </form>
+  );
+}
+```
+
+### Conditional Rendering
+
+```jsx
+// Use conditional rendering appropriately
+function UserGreeting({ user }) {
+  // Early return for null
+  if (!user) {
+    return <div>Please log in</div>;
+  }
+
+  // Ternary for simple conditions
+  return (
+    <div>
+      <h1>{user.isAdmin ? 'Admin Dashboard' : 'User Dashboard'}</h1>
+    </div>
+  );
+}
+
+// Logical AND for conditional rendering
+function Notification({ message, showNotification }) {
+  return (
+    <div>
+      {showNotification && <div className="notification">{message}</div>}
+    </div>
+  );
+}
+```
+
+---
+
+## CSS Styling
+
+### Class Naming
+
+```css
+/* Use BEM (Block Element Modifier) convention */
+/* Block */
+.user-card {
+  padding: 20px;
+  border: 1px solid #ccc;
+}
+
+/* Element */
+.user-card__header {
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.user-card__body {
+  margin-top: 10px;
+}
+
+/* Modifier */
+.user-card--featured {
+  border-color: gold;
+}
+
+.user-card__header--large {
+  font-size: 24px;
+}
+```
+
+### Organization
+
+```css
+/* Group related properties */
+.component {
+  /* Positioning */
+  position: relative;
+  top: 0;
+  left: 0;
+
+  /* Box model */
+  display: flex;
+  width: 100%;
+  padding: 20px;
+  margin: 0 auto;
+
+  /* Typography */
+  font-size: 16px;
+  line-height: 1.5;
+  color: #333;
+
+  /* Visual */
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+
+  /* Misc */
+  transition: all 0.3s ease;
+}
+```
+
+### CSS Variables
+
+```css
+/* Define CSS variables for theming */
+:root {
+  /* Colors */
+  --color-primary: #007bff;
+  --color-secondary: #6c757d;
+  --color-success: #28a745;
+  --color-danger: #dc3545;
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+
+  /* Typography */
+  --font-family: 'Inter', sans-serif;
+  --font-size-base: 16px;
+  --line-height-base: 1.5;
+}
+
+/* Dark theme */
+body.dark-theme {
+  --color-background: #1a1a1a;
+  --color-text: #ffffff;
+}
+
+/* Usage */
+.button {
+  background-color: var(--color-primary);
+  padding: var(--spacing-md);
+  font-family: var(--font-family);
+}
+```
+
+### Responsive Design
+
+```css
+/* Mobile-first approach */
+.container {
+  padding: 10px;
+}
+
+/* Tablet */
+@media (min-width: 768px) {
+  .container {
+    padding: 20px;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .container {
+    padding: 40px;
+  }
+}
+```
+
+---
+
+## Database (Prisma)
+
+### Schema Conventions
+
+```prisma
+// Use PascalCase for model names
+model Usuario {
+  id          Int       @id @default(autoincrement())
+  nombre      String
+  apellido    String
+  mail        String    @unique
+  contrasenia String
+  rol         String    @default("usuario")
+  
+  // Relations - use descriptive names
+  turnos      Turno[]
+  resenias    Resenia[] @relation("ReseniasPorUsuario")
+  
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Indexes
+  @@index([mail])
+}
+
+// Use descriptive field names
+model Establecimiento {
+  // Avoid abbreviations
+  id                Int       @id @default(autoincrement())
+  nombre            String    // Not 'nom' or 'name_est'
+  direccion         String?   // Not 'addr' or 'dir'
+  telefono          String?   // Not 'tel' or 'phone_num'
+  
+  // Use appropriate types
+  lat               Float     // Geographic coordinates
+  lng               Float
+  horarios          String?   @db.Text  // Long text
+  metadata          Json?     // JSON data
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+```
+
+### Queries
+
+```typescript
+// Use descriptive query names
+// Good
+async function findUserByEmail(email: string) {
+  return await prisma.usuario.findUnique({
+    where: { mail: email },
+  });
+}
+
+// Include related data explicitly
+async function getUserWithAppointments(userId: number) {
+  return await prisma.usuario.findUnique({
+    where: { id: userId },
+    include: {
+      turnos: {
+        include: {
+          establecimiento: true,
+          especialidad: true,
+        },
+        orderBy: { fecha: 'desc' },
+      },
+    },
+  });
+}
+
+// Use transactions for multiple operations
+async function createAppointmentWithNotification(data: CreateAppointmentDto) {
+  return await prisma.$transaction(async (tx) => {
+    const appointment = await tx.turno.create({ data });
+    await tx.notification.create({
+      data: {
+        userId: data.usuarioId,
+        message: 'Appointment created',
+      },
+    });
+    return appointment;
+  });
+}
+```
+
+---
+
+## Comments and Documentation
+
+### When to Comment
+
+```typescript
+// Good comments explain WHY, not WHAT
+
+// Bad - States the obvious
+// Increment counter by 1
+counter++;
+
+// Good - Explains why
+// Reset counter to prevent memory overflow after 1000 iterations
+if (counter > 1000) {
+  counter = 0;
+}
+
+// Document complex algorithms
+/**
+ * Calculates the shortest path between two establishments
+ * using Dijkstra's algorithm with geographic coordinates
+ * 
+ * Time complexity: O(V^2) where V is number of establishments
+ * 
+ * @param start Starting establishment ID
+ * @param end Destination establishment ID
+ * @returns Array of establishment IDs representing the path
+ */
+function findShortestPath(start: number, end: number): number[] {
+  // Implementation
+}
+```
+
+### JSDoc Comments
+
+```typescript
+/**
+ * Service for managing user appointments
+ * 
+ * @class AppointmentService
+ * @remarks This service handles CRUD operations for appointments
+ */
+@Injectable()
+export class AppointmentService {
+  /**
+   * Creates a new appointment
+   * 
+   * @param data - Appointment creation data
+   * @returns The created appointment
+   * @throws {ConflictException} If appointment slot is already taken
+   * @throws {NotFoundException} If establishment or user not found
+   * 
+   * @example
+   * ```typescript
+   * const appointment = await service.create({
+   *   usuarioId: 1,
+   *   establecimientoId: 2,
+   *   fecha: new Date(),
+   * });
+   * ```
+   */
+  async create(data: CreateAppointmentDto): Promise<Turno> {
+    // Implementation
+  }
+}
+```
+
+---
+
+## Git Commit Messages
+
+### Format
+
+```
+type(scope): subject
+
+body
+
+footer
+```
+
+### Examples
+
+```bash
+# Feature
+git commit -m "feat(appointments): add email notification system"
+
+# Bug fix
+git commit -m "fix(auth): resolve JWT token expiration issue"
+
+# Documentation
+git commit -m "docs(api): add authentication examples to API guide"
+
+# Refactor
+git commit -m "refactor(map): extract marker rendering to separate component"
+
+# Performance
+git commit -m "perf(database): add index on lat/lng for faster queries"
+
+# Test
+git commit -m "test(users): add unit tests for user service"
+
+# With body and footer
+git commit -m "feat(appointments): add reminder notifications
+
+Implement email reminders sent 24 hours before appointments.
+Users can opt-out in settings.
+
+Closes #123
+Breaking change: Requires SMTP configuration"
+```
+
+---
+
+## Code Review Checklist
+
+### Before Submitting
+
+- [ ] Code follows style guide
+- [ ] No console.logs in production code
+- [ ] Error handling is appropriate
+- [ ] Tests are included and passing
+- [ ] Documentation is updated
+- [ ] No commented-out code
+- [ ] No TODO comments without issues
+- [ ] Type safety is maintained
+- [ ] Performance is acceptable
+
+### Reviewing Others' Code
+
+- [ ] Logic is correct
+- [ ] Edge cases are handled
+- [ ] Code is readable
+- [ ] Tests are adequate
+- [ ] No security vulnerabilities
+- [ ] Performance is acceptable
+- [ ] Follows project conventions
+
+---
+
+## Tools and Linting
+
+### ESLint Configuration
+
+```json
+{
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:react/recommended",
+    "prettier"
+  ],
+  "rules": {
+    "no-console": "warn",
+    "no-unused-vars": "error",
+    "@typescript-eslint/explicit-function-return-type": "warn",
+    "react/prop-types": "warn"
+  }
+}
+```
+
+### Prettier Configuration
+
+```json
+{
+  "semi": true,
+  "trailingComma": "all",
+  "singleQuote": true,
+  "printWidth": 80,
+  "tabWidth": 2,
+  "arrowParens": "avoid"
+}
+```
+
+### Running Linters
+
+```bash
+# Backend
+cd backend
+npm run lint
+npm run format
+
+# Frontend
+cd Frontend
+npm run lint
+```
+
+---
+
+## Related Documentation
+
+- [Contributing](/development/contributing) - Contribution guidelines
+- [Testing](/development/testing) - Testing best practices
+- [Architecture](/development/architecture) - System architecture

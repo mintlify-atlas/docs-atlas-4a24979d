@@ -1,0 +1,784 @@
+---
+title: Backend Structure
+description: Organization and architecture of the SaludMap backend
+---
+
+## Overview
+
+The SaludMap backend is built with NestJS 11.1.6, following a modular architecture with TypeScript. It uses Prisma as the ORM, JWT for authentication, and integrates Google Gemini AI for chatbot functionality.
+
+**Location**: `backend/src/`
+
+## Directory Structure
+
+```
+backend/src/
+├── auth/                    # Authentication module
+│   ├── auth.controller.ts
+│   ├── auth.service.ts
+│   ├── auth.module.ts
+│   ├── jwt-auth.guard.ts
+│   ├── jwt.strategy.ts
+│   └── index.ts
+├── config/                  # Context configurations for AI
+│   ├── auth-context.ts
+│   ├── create-review-context.ts
+│   ├── geolocation-context.ts
+│   ├── language-context.ts
+│   ├── map-filters-context.ts
+│   ├── mcp-context.ts
+│   ├── mcp-context-alcohol.ts
+│   ├── mcp-context-cardiovascular.ts
+│   ├── mcp-context-diabetes.ts
+│   ├── mcp-context-epoc.ts
+│   ├── offline-download-context.ts
+│   ├── place-details-context.ts
+│   ├── preferences-context.ts
+│   ├── request-appointment-context.ts
+│   ├── save-location-context.ts
+│   ├── search-places-context.ts
+│   ├── sync-context.ts
+│   ├── theme-context.ts
+│   ├── ui-actions-context.ts
+│   ├── view-reviews-context.ts
+│   └── view-saved-locations-context.ts
+├── controllers/             # Additional controllers
+│   └── chatbot.controller.ts
+├── dto/                     # Data Transfer Objects
+│   └── chat-message.dto.ts
+├── especialidades/          # Medical specialties module
+│   ├── dto/
+│   ├── especialidades.controller.ts
+│   ├── especialidades.service.ts
+│   └── especialidades.module.ts
+├── establecimientos/        # Establishments module
+│   ├── dto/
+│   ├── establecimientos.controller.ts
+│   ├── establecimientos.service.ts
+│   └── establecimientos.module.ts
+├── guards/                  # Authorization guards
+│   ├── jwt-auth.guard.ts
+│   └── roles.guard.ts
+├── interfaces/              # TypeScript interfaces
+│   ├── mcp-context.interface.ts
+│   └── mcp-medical-context.interface.ts
+├── middleware/              # Custom middleware
+│   └── auth.middleware.ts
+├── places/                  # Places module (Overpass API)
+│   ├── places.controller.ts
+│   ├── places.service.ts
+│   └── places.module.ts
+├── resenias/                # Reviews module
+│   ├── dto/
+│   ├── resenias.controller.ts
+│   ├── resenias.service.ts
+│   └── resenias.module.ts
+├── routes/                  # Route definitions
+│   └── auth.routes.ts
+├── services/                # Shared services
+│   └── gemini.service.ts
+├── turnos/                  # Appointments module
+│   ├── dto/
+│   ├── turnos.controller.ts
+│   ├── turnos.service.ts
+│   └── turnos.module.ts
+├── usuarios/                # Users module
+│   ├── dto.ts
+│   ├── usuarios.controller.ts
+│   ├── usuarios.service.ts
+│   └── usuarios.module.ts
+├── users/                   # User models (legacy)
+│   ├── user.model.ts
+│   └── user.service.ts
+├── app.controller.ts        # Root controller
+├── app.service.ts           # Root service
+├── app.module.ts            # Root module
+└── main.ts                  # Application entry point
+```
+
+## Main Application
+
+### main.ts
+
+Application bootstrap file:
+- Creates NestJS application
+- Configures global prefix (`/api`)
+- Sets up CORS
+- Starts server on port 3000 (default)
+- Handles graceful shutdown
+
+```typescript
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  app.setGlobalPrefix('api');
+  app.enableCors({
+    origin: '*',
+    methods: 'GET,POST,PUT,DELETE',
+    credentials: true,
+  });
+  await app.listen(process.env.PORT || 3000);
+}
+```
+
+**Location**: `main.ts:1`
+
+---
+
+### app.module.ts
+
+Root module that imports all feature modules:
+
+```typescript
+@Module({
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    JwtModule.registerAsync({ /* ... */ }),
+    ScheduleModule.forRoot(),
+    PlacesModule,
+    TurnosModule,
+    UsuariosModule,
+    EstablecimientosModule,
+    ReseniasModule,
+    EspecialidadesModule,
+  ],
+  controllers: [AppController, ChatbotController],
+  providers: [AppService, JwtAuthGuard, GeminiService, RolesGuard],
+})
+```
+
+**Location**: `app.module.ts:1`
+
+---
+
+## Feature Modules
+
+### Authentication Module
+
+**Location**: `auth/`
+
+#### auth.controller.ts
+
+Handles authentication endpoints:
+- `POST /auth/login` - User login
+- `POST /auth/register` - User registration
+
+**Location**: `auth/auth.controller.ts:1`
+
+#### auth.service.ts
+
+Authentication business logic:
+- `validateUser(email, password)` - Verify credentials
+- `login(user)` - Generate JWT token
+- `register(userData)` - Create new user account
+
+**Location**: `auth/auth.service.ts:1`
+
+#### jwt-auth.guard.ts
+
+Protects routes requiring authentication:
+
+```typescript
+@UseGuards(JwtAuthGuard)
+export class ProtectedController { /* ... */ }
+```
+
+**Location**: `auth/jwt-auth.guard.ts:1`
+
+#### jwt.strategy.ts
+
+Passport JWT strategy configuration:
+- Validates JWT tokens
+- Extracts user from token payload
+- Used by `JwtAuthGuard`
+
+**Location**: `auth/jwt.strategy.ts:1`
+
+---
+
+### Users Module (Usuarios)
+
+**Location**: `usuarios/`
+
+#### usuarios.controller.ts
+
+User management endpoints:
+- `POST /usuarios/login` - Login user
+- `POST /usuarios` - Create user
+- `GET /usuarios/:id` - Get user by ID
+- `GET /usuarios` - List all users (admin only)
+
+**Location**: `usuarios/usuarios.controller.ts:1`
+
+#### usuarios.service.ts
+
+User business logic:
+- `create(userData)` - Create new user with hashed password
+- `findByEmail(email)` - Find user by email
+- `findById(id)` - Find user by ID
+- `validatePassword(plain, hashed)` - Verify password
+
+**Location**: `usuarios/usuarios.service.ts:1`
+
+#### dto.ts
+
+Data Transfer Objects for validation:
+
+```typescript
+export class CreateUsuarioDto {
+  nombre: string;
+  apellido: string;
+  mail: string;
+  contrasenia: string;
+  rol?: string;
+}
+
+export class LoginDto {
+  mail: string;
+  contrasenia: string;
+}
+```
+
+**Location**: `usuarios/dto.ts:1`
+
+---
+
+### Establishments Module (Establecimientos)
+
+**Location**: `establecimientos/`
+
+#### establecimientos.controller.ts
+
+Establishment endpoints:
+- `GET /establecimientos` - List establishments
+- `GET /establecimientos/:id` - Get establishment details
+- `POST /establecimientos` - Create establishment
+- `PUT /establecimientos/:id` - Update establishment
+- `DELETE /establecimientos/:id` - Delete establishment
+- `GET /establecimientos/nearby` - Find nearby establishments
+
+**Location**: `establecimientos/establecimientos.controller.ts:1`
+
+#### establecimientos.service.ts
+
+Establishment business logic:
+- `findAll(filters)` - List with filters
+- `findById(id)` - Get by ID with relations
+- `create(data)` - Create new establishment
+- `update(id, data)` - Update establishment
+- `findNearby(lat, lng, radius)` - Geolocation search
+- Prisma integration for database operations
+
+**Location**: `establecimientos/establecimientos.service.ts:1`
+
+---
+
+### Appointments Module (Turnos)
+
+**Location**: `turnos/`
+
+#### turnos.controller.ts
+
+Appointment endpoints:
+- `POST /turnos` - Create appointment (protected)
+- `GET /turnos/usuario/:id` - Get user's appointments
+- `GET /turnos/:id` - Get appointment by ID
+- `PUT /turnos/:id` - Update appointment
+- `DELETE /turnos/:id` - Cancel appointment
+
+**Location**: `turnos/turnos.controller.ts:1`
+
+#### turnos.service.ts
+
+Appointment business logic:
+- `create(turnoData)` - Create new appointment
+- `findByUserId(userId)` - Get user's appointments
+- `findById(id)` - Get appointment details
+- `update(id, data)` - Update appointment status
+- `cancel(id)` - Cancel appointment
+- Validation logic for appointment conflicts
+
+**Location**: `turnos/turnos.service.ts:1`
+
+#### DTOs
+
+```typescript
+export class CreateTurnoDto {
+  usuarioId: number;
+  establecimientoId: number;
+  especialidadId: number;
+  fecha: Date;
+  hora?: string;
+}
+
+export class UpdateTurnoDto {
+  fecha?: Date;
+  hora?: string;
+  estado?: string;
+}
+```
+
+**Location**: `turnos/dto/`
+
+---
+
+### Reviews Module (Resenias)
+
+**Location**: `resenias/`
+
+#### resenias.controller.ts
+
+Review endpoints:
+- `POST /resenias` - Create review (protected)
+- `GET /resenias/establecimiento/:id` - Get establishment reviews
+- `GET /resenias/usuario/:id` - Get user's reviews
+- `PUT /resenias/:id` - Update review
+- `DELETE /resenias/:id` - Delete review
+
+**Location**: `resenias/resenias.controller.ts:1`
+
+#### resenias.service.ts
+
+Review business logic:
+- `create(reseniaData)` - Create review
+- `findByEstablecimiento(id)` - Get establishment reviews
+- `findByUsuario(id)` - Get user reviews
+- `update(id, data)` - Update review
+- `delete(id)` - Delete review
+- Calculate average ratings
+
+**Location**: `resenias/resenias.service.ts:1`
+
+---
+
+### Specialties Module (Especialidades)
+
+**Location**: `especialidades/`
+
+#### especialidades.controller.ts
+
+Medical specialty endpoints:
+- `GET /especialidades` - List all specialties
+- `GET /especialidades/:id` - Get specialty details
+- `POST /especialidades` - Create specialty
+- `PUT /especialidades/:id` - Update specialty
+- `DELETE /especialidades/:id` - Delete specialty
+
+**Location**: `especialidades/especialidades.controller.ts:1`
+
+#### especialidades.service.ts
+
+Specialty business logic:
+- CRUD operations for medical specialties
+- Find specialties available at establishments
+- Manage specialty-establishment relationships
+
+**Location**: `especialidades/especialidades.service.ts:1`
+
+---
+
+### Places Module
+
+**Location**: `places/`
+
+Integration with Overpass API (OpenStreetMap):
+
+#### places.controller.ts
+
+Place search endpoints:
+- `GET /places/search` - Search nearby places
+- Query Overpass API for healthcare facilities
+
+**Location**: `places/places.controller.ts:1`
+
+#### places.service.ts
+
+Place search business logic:
+- `searchNearby(lat, lng, radius, type)` - Query Overpass API
+- Parse OpenStreetMap data
+- Transform to SaludMap format
+
+**Location**: `places/places.service.ts:1`
+
+---
+
+## AI Chatbot System
+
+### Chatbot Controller
+
+**Location**: `controllers/chatbot.controller.ts`
+
+Chatbot endpoints:
+- `POST /chatbot/message` - Send message to chatbot
+- Integrates with Gemini AI service
+- Uses Model Context Protocol (MCP)
+
+```typescript
+@Post('message')
+async sendMessage(@Body() messageDto: ChatMessageDto) {
+  return await this.geminiService.processMessage(messageDto);
+}
+```
+
+**Location**: `controllers/chatbot.controller.ts:1`
+
+---
+
+### Gemini Service
+
+**Location**: `services/gemini.service.ts`
+
+Google Gemini AI integration:
+- `processMessage(message, history)` - Process chat message
+- Context-aware responses using MCP contexts
+- Multiple specialized medical contexts:
+  - General health information
+  - Diabetes management
+  - Cardiovascular health
+  - EPOC (Chronic Obstructive Pulmonary Disease)
+  - Alcohol addiction support
+
+**Location**: `services/gemini.service.ts:1`
+
+---
+
+### MCP Contexts
+
+**Location**: `config/`
+
+Context files provide specialized knowledge to the AI:
+
+#### Medical Contexts
+- `mcp-context-diabetes.ts` - Diabetes information and management
+- `mcp-context-cardiovascular.ts` - Heart health guidance
+- `mcp-context-epoc.ts` - EPOC patient support
+- `mcp-context-alcohol.ts` - Alcohol addiction resources
+
+#### Application Contexts
+- `auth-context.ts` - Authentication assistance
+- `geolocation-context.ts` - Location help
+- `map-filters-context.ts` - Filter guidance
+- `request-appointment-context.ts` - Appointment booking help
+- `create-review-context.ts` - Review writing assistance
+- `save-location-context.ts` - Location saving help
+
+**Locations**: Various files in `config/`
+
+---
+
+## Guards and Middleware
+
+### JWT Auth Guard
+
+**Location**: `guards/jwt-auth.guard.ts`
+
+Protects routes requiring authentication:
+
+```typescript
+@UseGuards(JwtAuthGuard)
+@Post('appointments')
+createAppointment() { /* ... */ }
+```
+
+**Location**: `guards/jwt-auth.guard.ts:1`
+
+---
+
+### Roles Guard
+
+**Location**: `guards/roles.guard.ts`
+
+Role-based access control:
+
+```typescript
+@Roles('admin')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Get('all-users')
+getAllUsers() { /* ... */ }
+```
+
+**Location**: `guards/roles.guard.ts:1`
+
+---
+
+### Auth Middleware
+
+**Location**: `middleware/auth.middleware.ts`
+
+Custom authentication middleware for request processing.
+
+**Location**: `middleware/auth.middleware.ts:1`
+
+---
+
+## Database Integration
+
+### Prisma Setup
+
+**Schema Location**: `backend/prisma/schema.prisma`
+
+**Generated Client**: `backend/generated/`
+
+The Prisma client is generated to a custom `generated/` directory and imported throughout the application:
+
+```typescript
+import { PrismaClient } from '../generated';
+
+const prisma = new PrismaClient();
+```
+
+### Database Commands
+
+```bash
+# Generate Prisma Client
+npm run prisma:generate
+
+# Push schema to database
+npm run prisma:push
+
+# Open Prisma Studio
+npm run prisma:studio
+```
+
+---
+
+## Configuration
+
+### Environment Variables
+
+**Location**: `backend/.env`
+
+```env
+# Database
+DATABASE_URL="mysql://user:password@localhost:3306/saludmap"
+
+# JWT
+JWT_SECRET="your-secret-key"
+JWT_EXPIRES_IN="24h"
+
+# Server
+PORT=3000
+
+# Google AI
+GEMINI_API_KEY="your-gemini-api-key"
+```
+
+### ConfigModule
+
+Loads environment variables globally:
+
+```typescript
+ConfigModule.forRoot({
+  isGlobal: true,
+  envFilePath: ['.env', '.env.production'],
+})
+```
+
+**Location**: `app.module.ts:28`
+
+---
+
+## API Endpoint Structure
+
+All endpoints are prefixed with `/api`:
+
+### Authentication
+- `POST /api/usuarios/login` - Login
+- `POST /api/usuarios` - Register
+
+### Establishments
+- `GET /api/establecimientos` - List establishments
+- `GET /api/establecimientos/:id` - Get establishment
+- `GET /api/establecimientos/nearby?lat=X&lng=Y` - Nearby search
+
+### Appointments
+- `POST /api/turnos` - Create appointment
+- `GET /api/turnos/usuario/:id` - User's appointments
+- `PUT /api/turnos/:id` - Update appointment
+- `DELETE /api/turnos/:id` - Cancel appointment
+
+### Reviews
+- `POST /api/resenias` - Create review
+- `GET /api/resenias/establecimiento/:id` - Establishment reviews
+- `GET /api/resenias/usuario/:id` - User reviews
+
+### Specialties
+- `GET /api/especialidades` - List specialties
+- `GET /api/especialidades/:id` - Get specialty
+
+### Places
+- `GET /api/places/search?lat=X&lng=Y&radius=R` - Search places
+
+### Chatbot
+- `POST /api/chatbot/message` - Send chat message
+
+---
+
+## Common Patterns
+
+### Service with Prisma
+
+```typescript
+import { Injectable } from '@nestjs/common';
+import { PrismaClient } from '../generated';
+
+@Injectable()
+export class MyService {
+  private prisma = new PrismaClient();
+
+  async findAll() {
+    return await this.prisma.myModel.findMany();
+  }
+}
+```
+
+### Protected Endpoint
+
+```typescript
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+
+@Controller('protected')
+export class ProtectedController {
+  @UseGuards(JwtAuthGuard)
+  @Get()
+  getProtectedData() {
+    return { message: 'This is protected' };
+  }
+}
+```
+
+### DTO Validation
+
+```typescript
+import { IsString, IsEmail, MinLength } from 'class-validator';
+
+export class CreateUserDto {
+  @IsString()
+  nombre: string;
+
+  @IsEmail()
+  mail: string;
+
+  @IsString()
+  @MinLength(6)
+  contrasenia: string;
+}
+```
+
+---
+
+## Error Handling
+
+### HTTP Exceptions
+
+```typescript
+import { HttpException, HttpStatus } from '@nestjs/common';
+
+if (!user) {
+  throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+}
+```
+
+### Try-Catch Pattern
+
+```typescript
+async create(data: CreateDto) {
+  try {
+    return await this.prisma.model.create({ data });
+  } catch (error) {
+    throw new HttpException(
+      'Failed to create record',
+      HttpStatus.INTERNAL_SERVER_ERROR
+    );
+  }
+}
+```
+
+---
+
+## Scheduled Tasks
+
+Using `@nestjs/schedule`:
+
+```typescript
+import { Injectable } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
+
+@Injectable()
+export class TasksService {
+  @Cron('0 0 * * *') // Run daily at midnight
+  handleCron() {
+    // Cleanup old data, send reminders, etc.
+  }
+}
+```
+
+---
+
+## Testing
+
+Currently no test suite configured. Recommended setup:
+
+```bash
+npm run test        # Unit tests
+npm run test:e2e    # End-to-end tests
+npm run test:cov    # Coverage report
+```
+
+See [Testing Guide](/development/testing) for details.
+
+---
+
+## Build and Deployment
+
+### Development
+
+```bash
+npm run start:dev
+```
+
+Runs with hot reload on port 3000.
+
+### Production Build
+
+```bash
+npm run build
+```
+
+Compiles TypeScript to `dist/`.
+
+### Production Start
+
+```bash
+npm run start:prod
+```
+
+Runs compiled code from `dist/`.
+
+### Custom Build Script
+
+The build process includes copying Prisma generated files:
+
+```json
+"copy:generated": "powershell -Command \"Copy-Item -Path './generated' -Destination './dist' -Recurse -Force\""
+```
+
+---
+
+## Security Best Practices
+
+1. **Password Hashing**: Always hash passwords with bcrypt
+2. **JWT Secrets**: Use strong, random secrets in production
+3. **CORS**: Restrict origins in production
+4. **Validation**: Use DTOs with class-validator
+5. **Guards**: Protect sensitive endpoints
+6. **Environment Variables**: Never commit `.env` files
+
+---
+
+## Related Documentation
+
+- [Architecture](/development/architecture) - System architecture overview
+- [Database Schema](/development/database-schema) - Database structure
+- [Frontend Structure](/development/frontend-structure) - Frontend organization
+- [Testing](/development/testing) - Testing strategies

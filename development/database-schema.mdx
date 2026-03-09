@@ -1,0 +1,542 @@
+---
+title: Database Schema
+description: Complete database schema and relationships for SaludMap
+---
+
+## Overview
+
+SaludMap uses MySQL as its primary database with Prisma as the ORM. The schema is designed to support healthcare establishment discovery, appointment management, user reviews, and medical specialty tracking.
+
+**Location**: `backend/prisma/schema.prisma`
+
+## Database Configuration
+
+```prisma
+generator client {
+  provider = "prisma-client"
+  output   = "../generated"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+```
+
+## Entity Relationship Diagram
+
+```mermaid
+erDiagram
+    Usuario ||--o{ Turno : "books"
+    Usuario ||--o{ Resenia : "writes"
+    Establecimiento ||--o{ Turno : "hosts"
+    Establecimiento ||--o{ Resenia : "receives"
+    Establecimiento ||--o{ EstablecimientoEspecialidad : "offers"
+    Especialidad ||--o{ Turno : "requires"
+    Especialidad ||--o{ EstablecimientoEspecialidad : "provided_at"
+    Turno ||--|| Resenia : "reviewed_in"
+    
+    Usuario {
+        int id PK
+        string nombre
+        string apellido
+        string mail UK
+        string contrasenia
+        string rol
+        datetime createdAt
+        datetime updatedAt
+    }
+    
+    Establecimiento {
+        int id PK
+        float lat UK
+        float lng UK
+        string nombre
+        string tipo
+        string direccion
+        string telefono
+        text horarios
+        json metadata
+        datetime createdAt
+        datetime updatedAt
+    }
+    
+    Especialidad {
+        int id PK
+        string nombre UK
+        text descripcion
+        datetime createdAt
+        datetime updatedAt
+    }
+    
+    EstablecimientoEspecialidad {
+        int id PK
+        int establecimientoId FK
+        int especialidadId FK
+        text horariosDisponibles
+    }
+    
+    Turno {
+        int id PK
+        int usuarioId FK
+        int establecimientoId FK
+        int especialidadId FK
+        datetime fecha
+        string hora
+        string estado
+    }
+    
+    Resenia {
+        int id PK
+        int usuarioId FK
+        int establecimientoId FK
+        int turnoId UK
+        int puntuacion
+        text comentario
+        datetime createdAt
+        datetime updatedAt
+    }
+    
+    Ubicacion {
+        int id PK
+        string nombre
+        string direccion
+        float lat
+        float lng
+        datetime createdAt
+    }
+```
+
+## Schema Details
+
+### Usuario (User)
+
+Stores user account information for authentication and authorization.
+
+```prisma
+model Usuario {
+  id          Int        @id @default(autoincrement())
+  nombre      String
+  apellido    String
+  mail        String     @unique
+  contrasenia String
+  rol         String     @default("usuario") // "usuario" | "admin"
+  turnos      Turno[]
+  resenias    Resenia[]  @relation("ReseniasPorUsuario")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+```
+
+**Fields**:
+- `id`: Auto-incrementing primary key
+- `nombre`: User's first name
+- `apellido`: User's last name
+- `mail`: Unique email address (used for login)
+- `contrasenia`: Hashed password (bcrypt)
+- `rol`: User role - either "usuario" (regular user) or "admin"
+- `createdAt`: Account creation timestamp
+- `updatedAt`: Last update timestamp
+
+**Relationships**:
+- One-to-many with `Turno` (appointments)
+- One-to-many with `Resenia` (reviews)
+
+**Indexes**:
+- Unique index on `mail`
+
+---
+
+### Establecimiento (Establishment)
+
+Represents healthcare facilities including hospitals, clinics, pharmacies, etc.
+
+```prisma
+model Establecimiento {
+  id             Int                          @id @default(autoincrement())
+  lat            Float
+  lng            Float
+  nombre         String
+  tipo           String
+  direccion      String?
+  telefono       String?
+  horarios       String?                      @db.Text
+  metadata       Json?
+  turnos         Turno[]
+  resenias       Resenia[]                    @relation("ReseniasPorEstablecimiento")
+  especialidades EstablecimientoEspecialidad[]
+  createdAt      DateTime                     @default(now())
+  updatedAt      DateTime                     @updatedAt
+
+  @@unique([lat, lng])
+  @@index([lat, lng])
+}
+```
+
+**Fields**:
+- `id`: Auto-incrementing primary key
+- `lat`: Latitude coordinate
+- `lng`: Longitude coordinate
+- `nombre`: Establishment name
+- `tipo`: Type (hospital, clinic, pharmacy, etc.)
+- `direccion`: Physical address (optional)
+- `telefono`: Contact phone number (optional)
+- `horarios`: Opening hours in text format (optional)
+- `metadata`: Additional JSON data from Overpass API (optional)
+- `createdAt`: Record creation timestamp
+- `updatedAt`: Last update timestamp
+
+**Relationships**:
+- One-to-many with `Turno` (appointments)
+- One-to-many with `Resenia` (reviews)
+- One-to-many with `EstablecimientoEspecialidad` (available specialties)
+
+**Indexes**:
+- Unique composite index on `(lat, lng)` - prevents duplicate establishments
+- Regular index on `(lat, lng)` - optimizes geolocation queries
+
+---
+
+### Especialidad (Medical Specialty)
+
+Catalog of medical specialties available in the system.
+
+```prisma
+model Especialidad {
+  id               Int                          @id @default(autoincrement())
+  nombre           String                       @unique
+  descripcion      String?                      @db.Text
+  establecimientos EstablecimientoEspecialidad[]
+  turnos           Turno[]
+  createdAt        DateTime                     @default(now())
+  updatedAt        DateTime                     @updatedAt
+}
+```
+
+**Fields**:
+- `id`: Auto-incrementing primary key
+- `nombre`: Unique specialty name (e.g., "Cardiología", "Pediatría")
+- `descripcion`: Detailed description (optional)
+- `createdAt`: Record creation timestamp
+- `updatedAt`: Last update timestamp
+
+**Relationships**:
+- One-to-many with `EstablecimientoEspecialidad` (offered at establishments)
+- One-to-many with `Turno` (appointments)
+
+**Indexes**:
+- Unique index on `nombre`
+
+---
+
+### EstablecimientoEspecialidad (Junction Table)
+
+Many-to-many relationship between establishments and specialties, with additional scheduling data.
+
+```prisma
+model EstablecimientoEspecialidad {
+  id                  Int             @id @default(autoincrement())
+  establecimientoId   Int
+  especialidadId      Int
+  horariosDisponibles String?         @db.Text
+  establecimiento     Establecimiento @relation(fields: [establecimientoId], references: [id])
+  especialidad        Especialidad    @relation(fields: [especialidadId], references: [id])
+
+  @@unique([establecimientoId, especialidadId])
+  @@index([establecimientoId])
+  @@index([especialidadId])
+}
+```
+
+**Fields**:
+- `id`: Auto-incrementing primary key
+- `establecimientoId`: Foreign key to `Establecimiento`
+- `especialidadId`: Foreign key to `Especialidad`
+- `horariosDisponibles`: Available hours for this specialty at this establishment (optional)
+
+**Relationships**:
+- Many-to-one with `Establecimiento`
+- Many-to-one with `Especialidad`
+
+**Indexes**:
+- Unique composite index on `(establecimientoId, especialidadId)`
+- Regular index on `establecimientoId`
+- Regular index on `especialidadId`
+
+---
+
+### Turno (Appointment)
+
+Represents scheduled appointments between users and establishments.
+
+```prisma
+model Turno {
+  id                Int             @id @default(autoincrement())
+  usuarioId         Int
+  establecimientoId Int
+  especialidadId    Int
+  fecha             DateTime
+  hora              String?
+  estado            String          @default("pendiente")
+  usuario           Usuario         @relation(fields: [usuarioId], references: [id])
+  establecimiento   Establecimiento @relation(fields: [establecimientoId], references: [id])
+  especialidad      Especialidad    @relation(fields: [especialidadId], references: [id])
+  resenia           Resenia?
+
+  @@index([usuarioId])
+  @@index([establecimientoId])
+  @@index([especialidadId])
+}
+```
+
+**Fields**:
+- `id`: Auto-incrementing primary key
+- `usuarioId`: Foreign key to `Usuario`
+- `establecimientoId`: Foreign key to `Establecimiento`
+- `especialidadId`: Foreign key to `Especialidad`
+- `fecha`: Appointment date
+- `hora`: Appointment time as string (optional)
+- `estado`: Appointment status (default: "pendiente")
+  - Possible values: "pendiente", "confirmado", "completado", "cancelado"
+
+**Relationships**:
+- Many-to-one with `Usuario`
+- Many-to-one with `Establecimiento`
+- Many-to-one with `Especialidad`
+- One-to-one with `Resenia` (optional review)
+
+**Indexes**:
+- Regular index on `usuarioId`
+- Regular index on `establecimientoId`
+- Regular index on `especialidadId`
+
+---
+
+### Resenia (Review)
+
+User reviews and ratings for establishments, linked to completed appointments.
+
+```prisma
+model Resenia {
+  id                Int             @id @default(autoincrement())
+  usuarioId         Int
+  establecimientoId Int
+  turnoId           Int             @unique
+  puntuacion        Int
+  comentario        String          @db.Text
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  usuario           Usuario         @relation("ReseniasPorUsuario", fields: [usuarioId], references: [id])
+  establecimiento   Establecimiento @relation("ReseniasPorEstablecimiento", fields: [establecimientoId], references: [id])
+  turno             Turno           @relation(fields: [turnoId], references: [id])
+
+  @@index([establecimientoId])
+  @@index([usuarioId])
+}
+```
+
+**Fields**:
+- `id`: Auto-incrementing primary key
+- `usuarioId`: Foreign key to `Usuario`
+- `establecimientoId`: Foreign key to `Establecimiento`
+- `turnoId`: Foreign key to `Turno` (unique - one review per appointment)
+- `puntuacion`: Rating score (typically 1-5)
+- `comentario`: Review text
+- `createdAt`: Review creation timestamp
+- `updatedAt`: Last update timestamp
+
+**Relationships**:
+- Many-to-one with `Usuario`
+- Many-to-one with `Establecimiento`
+- One-to-one with `Turno`
+
+**Indexes**:
+- Unique index on `turnoId`
+- Regular index on `establecimientoId`
+- Regular index on `usuarioId`
+
+---
+
+### Ubicacion (Saved Location)
+
+User-saved locations for quick access.
+
+```prisma
+model Ubicacion {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  direccion String
+  lat       Float
+  lng       Float
+  createdAt DateTime @default(now())
+}
+```
+
+**Fields**:
+- `id`: Auto-incrementing primary key
+- `nombre`: Location name/label
+- `direccion`: Address
+- `lat`: Latitude coordinate
+- `lng`: Longitude coordinate
+- `createdAt`: Record creation timestamp
+
+**Note**: This table currently lacks a user relationship. Consider adding a `usuarioId` foreign key for multi-user support.
+
+---
+
+## Common Query Patterns
+
+### Find Establishments Near Location
+
+```typescript
+// backend/src/establecimientos/establecimientos.service.ts
+const establishments = await prisma.establecimiento.findMany({
+  where: {
+    lat: { gte: minLat, lte: maxLat },
+    lng: { gte: minLng, lte: maxLng },
+  },
+  include: {
+    especialidades: {
+      include: {
+        especialidad: true,
+      },
+    },
+    resenias: true,
+  },
+});
+```
+
+### Get User Appointments with Details
+
+```typescript
+const appointments = await prisma.turno.findMany({
+  where: { usuarioId: userId },
+  include: {
+    establecimiento: true,
+    especialidad: true,
+    resenia: true,
+  },
+  orderBy: { fecha: 'desc' },
+});
+```
+
+### Get Establishment with Reviews and Specialties
+
+```typescript
+const establishment = await prisma.establecimiento.findUnique({
+  where: { id: establishmentId },
+  include: {
+    especialidades: {
+      include: {
+        especialidad: true,
+      },
+    },
+    resenias: {
+      include: {
+        usuario: {
+          select: { nombre: true, apellido: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    },
+  },
+});
+```
+
+## Database Commands
+
+### Generate Prisma Client
+
+```bash
+npm run prisma:generate
+```
+
+Generates TypeScript types and Prisma Client to `backend/generated/`.
+
+### Push Schema to Database
+
+```bash
+npm run prisma:push
+```
+
+Synchronizes the Prisma schema with the database (useful in development).
+
+### Open Prisma Studio
+
+```bash
+npm run prisma:studio
+```
+
+Launches a GUI to browse and edit database data at `http://localhost:5555`.
+
+### Create Migration
+
+```bash
+cd backend
+npx prisma migrate dev --name description_of_changes
+```
+
+### Apply Migrations in Production
+
+```bash
+npx prisma migrate deploy
+```
+
+## Environment Configuration
+
+Set the database connection string in `backend/.env`:
+
+```env
+DATABASE_URL="mysql://username:password@localhost:3306/saludmap"
+```
+
+**Format**: `mysql://USER:PASSWORD@HOST:PORT/DATABASE`
+
+## Indexing Strategy
+
+### Performance Indexes
+
+1. **Geolocation queries**: `(lat, lng)` on `Establecimiento`
+2. **Foreign key lookups**: All foreign keys are indexed
+3. **Unique constraints**: Email, specialty names, coordinates
+
+### Query Optimization Tips
+
+- Use `select` to fetch only needed fields
+- Use `include` judiciously to avoid N+1 queries
+- Consider using `findFirst` instead of `findMany` with `take: 1`
+- Add indexes on frequently filtered fields
+
+## Data Integrity
+
+### Constraints
+
+- **Foreign keys**: Enforce referential integrity
+- **Unique constraints**: Prevent duplicates (email, coordinates, specialty names)
+- **Default values**: Ensure fields are never null when required
+
+### Cascading Behavior
+
+Currently, no cascade deletes are configured. Consider adding:
+
+```prisma
+model Usuario {
+  // ...
+  turnos   Turno[]   @relation(onDelete: Cascade)
+  resenias Resenia[] @relation(onDelete: Cascade)
+}
+```
+
+## Migrations Best Practices
+
+1. **Always test migrations in development first**
+2. **Backup production database before applying migrations**
+3. **Use descriptive migration names**
+4. **Review generated SQL before deploying**
+5. **Consider data migrations for schema changes**
+
+## Related Documentation
+
+- [Architecture](/development/architecture) - System architecture overview
+- [Backend Structure](/development/backend-structure) - Backend code organization
+- [Testing](/development/testing) - Database testing strategies

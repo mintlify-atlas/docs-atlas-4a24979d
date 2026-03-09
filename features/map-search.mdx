@@ -1,0 +1,319 @@
+---
+title: 'Map-Based Search'
+description: 'Interactive map with real-time facility search and location services'
+icon: 'map'
+---
+
+## Overview
+
+SaludMap's map-based search is the core feature that allows users to discover healthcare facilities in their area. Built with Leaflet and OpenStreetMap, it provides real-time geolocation, facility filtering, and offline support.
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Real-Time Location" icon="location-dot">
+    GPS tracking with automatic map centering and accuracy indicators
+  </Card>
+  <Card title="Facility Filters" icon="filter">
+    Filter by hospitals, clinics, doctors, and veterinary services
+  </Card>
+  <Card title="Offline Mode" icon="wifi-slash">
+    Download map tiles and facility data for offline access
+  </Card>
+  <Card title="Manual Positioning" icon="hand-pointer">
+    Drag the location marker to manually set your position
+  </Card>
+</CardGroup>
+
+## Location Services
+
+### GPS Tracking
+
+The map automatically tracks your location using the browser's Geolocation API:
+
+```jsx
+// Auto-tracking starts on component mount
+locationService.startWatching();
+
+// Location updates trigger map recentering
+const handleLocationChange = async (location) => {
+  setCurrentLocation(location);
+  mapRef.current.setView([location.lat, location.lng], 15);
+  await fetchNearbyPlaces(location);
+};
+```
+
+<Info>
+Location accuracy is displayed in the bottom-left corner, showing precision in meters.
+</Info>
+
+### Location Sources
+
+SaludMap tracks three types of location sources:
+
+- **GPS**: Continuous tracking from device location services
+- **Calibrated**: One-time high-accuracy position update
+- **Manual**: User-dragged marker position
+
+```jsx
+// Calibrate for high-accuracy position
+const handleCalibrate = async () => {
+  const location = await locationService.calibratePosition();
+  mapRef.current.setView([location.lat, location.lng], 15);
+};
+
+// Manual positioning via draggable marker
+const handleMarkerDrag = async (event) => {
+  const { lat, lng } = event.target.getLatLng();
+  await locationService.setManualLocation(lat, lng);
+};
+```
+
+## Facility Discovery
+
+### Nearby Places API
+
+The map queries healthcare facilities based on your current location:
+
+```jsx
+const fetchNearbyPlaces = async (location) => {
+  const selectedTypes = Object.keys(filters).filter(k => filters[k]);
+  const types = selectedTypes.join(',') || 'hospital,clinic,doctors,veterinary';
+  
+  const response = await axios.get(
+    `/api/places?lat=${location.lat}&lng=${location.lng}&types=${types}`
+  );
+  
+  setLugares(normalizeApiResponse(response.data));
+};
+```
+
+### Facility Types & Markers
+
+Facilities are displayed with color-coded markers:
+
+<CodeGroup>
+```jsx Map.jsx
+const iconDefs = {
+  hospital: { key: 'hospital', color: '#e74c3c', label: 'H' },
+  clinic: { key: 'clinica', color: '#3498db', label: 'C' },
+  doctors: { key: 'doctor', color: '#2ecc71', label: 'D' },
+  veterinary: { key: 'veterinaria', color: '#9b59b6', label: 'V' },
+};
+```
+
+```css Map.css
+.marker-hospital { background: var(--marker-hospital, #e74c3c); }
+.marker-clinica { background: var(--marker-clinic, #3498db); }
+.marker-doctor { background: var(--marker-doctors, #2ecc71); }
+.marker-veterinaria { background: var(--marker-vet, #9b59b6); }
+```
+</CodeGroup>
+
+## Filtering
+
+### Filter Controls
+
+Users can filter visible facilities by type:
+
+```jsx
+const [filters, setFilters] = useState({
+  hospital: true,
+  clinic: true,
+  doctors: true,
+  veterinary: true
+});
+
+const visibleLugares = lugares.filter(l => {
+  const tipo = l.type || l.tipo || 'default';
+  return !!filters[tipo];
+});
+```
+
+<Frame>
+  <img src="/images/map-filters.png" alt="Filter modal" />
+</Frame>
+
+### Filter Modal
+
+The filter modal allows toggling individual facility types:
+
+```jsx
+<div className="filters-vertical">
+  <button onClick={toggleAllFilters}>
+    Todos
+  </button>
+  <button 
+    className={filters.hospital ? 'active' : ''} 
+    onClick={() => setFilters(f => ({ ...f, hospital: !f.hospital }))}
+  >
+    🏥 Hospital
+  </button>
+  {/* Additional filter buttons */}
+</div>
+```
+
+## Saved Locations
+
+### Saving Locations
+
+Users can save custom locations for quick access:
+
+```jsx
+const handleSaveLocation = async (locationData) => {
+  await saveNamedLocation(
+    locationData.name,
+    locationData.lat,
+    locationData.lng,
+    locationData.description
+  );
+};
+```
+
+<Note>
+Saved locations are stored in IndexedDB and persist across sessions.
+</Note>
+
+### Location Management
+
+- **Save Current Location**: Opens modal to name and save current map position
+- **View Saved Locations**: Browse and jump to saved locations
+- **Delete Locations**: Remove saved locations from storage
+
+## Map Controls
+
+### Navigation Bar Integration
+
+The map responds to actions from the global navigation bar:
+
+```jsx
+useEffect(() => {
+  const listener = (e) => {
+    switch(e.detail) {
+      case 'calibrate': handleCalibrate(); break;
+      case 'return-gps': handleReturnToGPS(); break;
+      case 'download-offline': handleDownloadOffline(); break;
+      case 'save-location': setShowSaveLocationModal(true); break;
+      case 'view-locations': setShowSavedLocationsList(true); break;
+      case 'filters': setShowFiltersModal(true); break;
+    }
+  };
+  window.addEventListener('map-action', listener);
+}, []);
+```
+
+### User Interaction Detection
+
+The map detects when users manually pan or zoom to prevent automatic recentering:
+
+```jsx
+const onUserInteractionStart = () => {
+  userInteracting.current = true;
+};
+
+map.on('movestart', onUserInteractionStart);
+map.on('zoomstart', onUserInteractionStart);
+```
+
+## Facility Details
+
+### Establishment Info Panel
+
+Clicking a facility marker opens a detailed panel:
+
+```jsx
+const handlePlaceSelect = async (lugar) => {
+  setSelectedPlace(lugar);
+  const est = await establecimientosService.findOrCreate(lugar);
+  setSelectedEstablecimiento(est);
+  if (onEstablishmentSelect) onEstablishmentSelect(est);
+};
+```
+
+The panel displays:
+- Facility name and type
+- Address and contact information
+- Opening hours (if available)
+- Review statistics
+- Action buttons (appointments, reviews)
+
+## Offline Support
+
+See the [Offline Mode](/features/offline-mode) documentation for details on map tile caching and offline functionality.
+
+## Related Features
+
+<CardGroup cols={2}>
+  <Card title="Appointments" icon="calendar" href="/features/appointments">
+    Book appointments directly from facility markers
+  </Card>
+  <Card title="Reviews" icon="star" href="/features/reviews">
+    View and write reviews for healthcare facilities
+  </Card>
+  <Card title="Offline Mode" icon="download" href="/features/offline-mode">
+    Download areas for offline map access
+  </Card>
+  <Card title="Emergency" icon="circle-exclamation" href="/features/emergency">
+    Quick access to emergency services
+  </Card>
+</CardGroup>
+
+## Technical Implementation
+
+### Core Dependencies
+
+```json package.json
+{
+  "dependencies": {
+    "react-leaflet": "^4.x",
+    "leaflet": "^1.9.x",
+    "axios": "^1.x"
+  }
+}
+```
+
+### Component Structure
+
+<Steps>
+  <Step title="Location Service">
+    `locationService.js` handles GPS tracking and position updates
+  </Step>
+  <Step title="Map Component">
+    `Map.jsx` renders the Leaflet map with markers and controls
+  </Step>
+  <Step title="Places API">
+    Backend API queries OpenStreetMap for nearby facilities
+  </Step>
+  <Step title="Establishment Service">
+    `establecimientosService.js` manages facility data and persistence
+  </Step>
+</Steps>
+
+## Performance Optimizations
+
+<AccordionGroup>
+  <Accordion title="Icon Caching">
+    Marker icons are cached to avoid recreating them on every render:
+    ```jsx
+    const iconCache = {};
+    const getIconForType = (type) => {
+      if (!iconCache[type]) {
+        iconCache[type] = createDivIcon(type);
+      }
+      return iconCache[type];
+    };
+    ```
+  </Accordion>
+  
+  <Accordion title="Debounced Updates">
+    Location updates are debounced to prevent excessive API calls and map recentering.
+  </Accordion>
+  
+  <Accordion title="Lazy Loading">
+    Facility details are loaded on-demand when markers are clicked, not when initially displayed.
+  </Accordion>
+</AccordionGroup>
+
+<Tip>
+For best performance, limit the number of visible markers by using filters or reducing the search radius.
+</Tip>

@@ -1,0 +1,111 @@
+---
+title: 'Create Appointment'
+api: 'POST /turnos'
+---
+
+Creates a new appointment (turno) for a user at a healthcare establishment with a specific specialty.
+
+## Request Body
+
+<ParamField body="usuarioId" type="number" required>
+  The ID of the user booking the appointment
+</ParamField>
+
+<ParamField body="establecimientoId" type="number" required>
+  The ID of the healthcare establishment
+</ParamField>
+
+<ParamField body="especialidadId" type="number" required>
+  The ID of the medical specialty for the appointment
+</ParamField>
+
+<ParamField body="fecha" type="string" required>
+  The date of the appointment in ISO 8601 format (e.g., "2026-03-15")
+</ParamField>
+
+<ParamField body="hora" type="string" required>
+  The time of the appointment in HH:MM format (e.g., "14:30")
+</ParamField>
+
+## Response
+
+<ResponseField name="id" type="number">
+  The unique identifier for the created appointment
+</ResponseField>
+
+<ResponseField name="usuarioId" type="number">
+  The ID of the user who booked the appointment
+</ResponseField>
+
+<ResponseField name="establecimientoId" type="number">
+  The ID of the healthcare establishment
+</ResponseField>
+
+<ResponseField name="especialidadId" type="number">
+  The ID of the medical specialty
+</ResponseField>
+
+<ResponseField name="fecha" type="string">
+  The date of the appointment
+</ResponseField>
+
+<ResponseField name="hora" type="string">
+  The time of the appointment
+</ResponseField>
+
+<ResponseField name="estado" type="string">
+  The status of the appointment (e.g., "pendiente", "completado", "cancelado")
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  Timestamp when the appointment was created
+</ResponseField>
+
+## Example Request
+
+```json
+{
+  "usuarioId": 123,
+  "establecimientoId": 45,
+  "especialidadId": 7,
+  "fecha": "2026-03-20",
+  "hora": "10:00"
+}
+```
+
+## Example Response
+
+```json
+{
+  "id": 1001,
+  "usuarioId": 123,
+  "establecimientoId": 45,
+  "especialidadId": 7,
+  "fecha": "2026-03-20T00:00:00.000Z",
+  "hora": "10:00",
+  "estado": "pendiente",
+  "createdAt": "2026-03-09T14:30:00.000Z"
+}
+```
+
+## Error Responses
+
+### Missing Required Fields
+
+```json
+{
+  "statusCode": 400,
+  "message": "usuarioId es requerido",
+  "error": "Bad Request"
+}
+```
+
+### Invalid Date Format
+
+```json
+{
+  "statusCode": 500,
+  "message": "Invalid date format",
+  "error": "Internal Server Error"
+}
+```

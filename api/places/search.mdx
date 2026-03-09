@@ -1,0 +1,147 @@
+---
+title: 'Search Places'
+api: 'GET /places'
+description: 'Search for healthcare facilities and establishments near a specific location using OpenStreetMap data'
+---
+
+## Overview
+
+This endpoint searches for healthcare facilities near specified coordinates using the Overpass API (OpenStreetMap data). It supports filtering by amenity types and customizable search radius.
+
+## Query Parameters
+
+<ParamField query="lat" type="number" required>
+  Latitude coordinate for the search center point. Must be a valid decimal number.
+</ParamField>
+
+<ParamField query="lng" type="number" required>
+  Longitude coordinate for the search center point. Must be a valid decimal number.
+</ParamField>
+
+<ParamField query="types" type="string | string[]">
+  Comma-separated list of amenity types to search for. Supports multiple values.
+  
+  **Default types:** `hospital`, `clinic`, `doctors`, `veterinary`
+  
+  **Example values:** `hospital,clinic`, `doctors`, `pharmacy`
+</ParamField>
+
+<ParamField query="radius" type="number">
+  Search radius in meters from the center point.
+  
+  **Default:** `3000` (3 kilometers)
+  
+  **Example:** `5000` for a 5km radius
+</ParamField>
+
+## Response
+
+<ResponseField name="lugares" type="array">
+  Array of place objects from OpenStreetMap matching the search criteria. Each place contains:
+  
+  <ResponseField name="id" type="number">
+    Unique OpenStreetMap node/way/relation ID
+  </ResponseField>
+  
+  <ResponseField name="type" type="string">
+    OSM element type: `node`, `way`, or `relation`
+  </ResponseField>
+  
+  <ResponseField name="lat" type="number">
+    Latitude coordinate of the place
+  </ResponseField>
+  
+  <ResponseField name="lon" type="number">
+    Longitude coordinate of the place (note: OSM uses `lon` not `lng`)
+  </ResponseField>
+  
+  <ResponseField name="tags" type="object">
+    OpenStreetMap tags containing place metadata:
+    - `name`: Place name
+    - `amenity`: Amenity type (e.g., hospital, clinic)
+    - `addr:*`: Address components
+    - `phone`: Contact phone number
+    - `opening_hours`: Operating hours
+    - Other OSM tags as available
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="lejania" type="number">
+  The search radius that was used (in meters)
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X GET "https://api.saludmap.com/places?lat=-34.6037&lng=-58.3816&types=hospital,clinic&radius=5000"
+```
+
+## Example Response
+
+```json
+{
+  "lugares": [
+    {
+      "id": 123456789,
+      "type": "node",
+      "lat": -34.6045,
+      "lon": -58.3820,
+      "tags": {
+        "name": "Hospital General",
+        "amenity": "hospital",
+        "addr:street": "Avenida Corrientes",
+        "addr:housenumber": "1234",
+        "phone": "+54 11 1234-5678",
+        "emergency": "yes"
+      }
+    },
+    {
+      "id": 987654321,
+      "type": "way",
+      "lat": -34.6028,
+      "lon": -58.3795,
+      "tags": {
+        "name": "Clínica Médica del Centro",
+        "amenity": "clinic",
+        "addr:street": "Calle Florida",
+        "opening_hours": "Mo-Fr 08:00-20:00"
+      }
+    }
+  ],
+  "lejania": 5000
+}
+```
+
+## Error Responses
+
+### 400 Bad Request
+
+Returned when required parameters are missing or invalid:
+
+```json
+{
+  "statusCode": 400,
+  "message": "lat y lng son requeridos y deben ser números",
+  "error": "Bad Request"
+}
+```
+
+### 503 Service Unavailable
+
+Returned when the Overpass API is unavailable or times out:
+
+```json
+{
+  "statusCode": 503,
+  "error": "No se pudo obtener datos de Overpass (timeout o servidor ocupado).",
+  "detail": "Connection timeout"
+}
+```
+
+## Notes
+
+- The endpoint queries multiple Overpass API mirrors for reliability
+- Requests timeout after 20 seconds per mirror
+- If one mirror fails, the system automatically tries the next one
+- Results are returned in OpenStreetMap format with full tag metadata
+- The search uses a circular area around the specified coordinates

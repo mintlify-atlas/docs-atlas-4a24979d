@@ -1,0 +1,214 @@
+---
+title: 'List Establishments'
+api: 'GET /establecimientos'
+description: 'Retrieve a paginated list of all registered healthcare establishments'
+---
+
+## Overview
+
+Fetch a list of healthcare establishments registered in the SaludMap database. This endpoint supports pagination and includes related data such as reviews and specialties.
+
+## Query Parameters
+
+<ParamField query="skip" type="number">
+  Number of records to skip for pagination (offset).
+  
+  **Default:** `0`
+  
+  **Example:** `skip=50` to start from the 51st record
+</ParamField>
+
+<ParamField query="take" type="number">
+  Number of records to return (limit).
+  
+  **Default:** `50`
+  
+  **Maximum recommended:** `100`
+  
+  **Example:** `take=20` for 20 records per page
+</ParamField>
+
+## Response
+
+Returns an array of establishment objects.
+
+<ResponseField name="[]" type="array">
+  Array of establishment objects with the following structure:
+  
+  <ResponseField name="id" type="number">
+    Unique establishment identifier
+  </ResponseField>
+  
+  <ResponseField name="nombre" type="string">
+    Establishment name
+  </ResponseField>
+  
+  <ResponseField name="tipo" type="string">
+    Type of establishment (e.g., hospital, clinic, doctors)
+  </ResponseField>
+  
+  <ResponseField name="lat" type="number">
+    Latitude coordinate
+  </ResponseField>
+  
+  <ResponseField name="lng" type="number">
+    Longitude coordinate
+  </ResponseField>
+  
+  <ResponseField name="direccion" type="string | null">
+    Street address
+  </ResponseField>
+  
+  <ResponseField name="telefono" type="string | null">
+    Contact phone number
+  </ResponseField>
+  
+  <ResponseField name="horarios" type="string | null">
+    Operating hours information
+  </ResponseField>
+  
+  <ResponseField name="metadata" type="object">
+    Additional metadata stored as JSON
+  </ResponseField>
+  
+  <ResponseField name="createdAt" type="string">
+    ISO 8601 timestamp of creation
+  </ResponseField>
+  
+  <ResponseField name="updatedAt" type="string">
+    ISO 8601 timestamp of last update
+  </ResponseField>
+  
+  <ResponseField name="resenias" type="array">
+    Array of reviews with basic information:
+    
+    <ResponseField name="id" type="number">
+      Review ID
+    </ResponseField>
+    
+    <ResponseField name="puntuacion" type="number">
+      Rating score (typically 1-5)
+    </ResponseField>
+  </ResponseField>
+  
+  <ResponseField name="especialidades" type="array">
+    Array of specialties offered:
+    
+    <ResponseField name="especialidad" type="object">
+      <ResponseField name="id" type="number">
+        Specialty ID
+      </ResponseField>
+      
+      <ResponseField name="nombre" type="string">
+        Specialty name
+      </ResponseField>
+    </ResponseField>
+    
+    <ResponseField name="horariosDisponibles" type="string | null">
+      Available hours for this specialty
+    </ResponseField>
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X GET "https://api.saludmap.com/establecimientos?skip=0&take=10"
+```
+
+## Example Response
+
+```json
+[
+  {
+    "id": 1,
+    "nombre": "Hospital Central",
+    "tipo": "hospital",
+    "lat": -34.6037,
+    "lng": -58.3816,
+    "direccion": "Av. Corrientes 1234",
+    "telefono": "+54 11 4567-8900",
+    "horarios": "24 horas",
+    "metadata": {},
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z",
+    "resenias": [
+      {
+        "id": 10,
+        "puntuacion": 4
+      },
+      {
+        "id": 11,
+        "puntuacion": 5
+      }
+    ],
+    "especialidades": [
+      {
+        "especialidad": {
+          "id": 1,
+          "nombre": "Cardiología"
+        },
+        "horariosDisponibles": "Lunes a Viernes 8:00-17:00"
+      },
+      {
+        "especialidad": {
+          "id": 3,
+          "nombre": "Pediatría"
+        },
+        "horariosDisponibles": "Lunes a Sábado 9:00-18:00"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "nombre": "Clínica Privada del Sol",
+    "tipo": "clinic",
+    "lat": -34.5891,
+    "lng": -58.3974,
+    "direccion": "Calle Falsa 456",
+    "telefono": null,
+    "horarios": "Lunes a Viernes 8:00-20:00",
+    "metadata": {
+      "parking": true,
+      "wheelchair_accessible": true
+    },
+    "createdAt": "2024-02-01T14:20:00.000Z",
+    "updatedAt": "2024-02-10T09:15:00.000Z",
+    "resenias": [],
+    "especialidades": [
+      {
+        "especialidad": {
+          "id": 5,
+          "nombre": "Dermatología"
+        },
+        "horariosDisponibles": null
+      }
+    ]
+  }
+]
+```
+
+## Pagination Example
+
+### First Page (10 items)
+```bash
+curl "https://api.saludmap.com/establecimientos?skip=0&take=10"
+```
+
+### Second Page (10 items)
+```bash
+curl "https://api.saludmap.com/establecimientos?skip=10&take=10"
+```
+
+### Third Page (10 items)
+```bash
+curl "https://api.saludmap.com/establecimientos?skip=20&take=10"
+```
+
+## Notes
+
+- Results are not explicitly ordered unless specified in the database query
+- The `resenias` field only includes basic review info (id, puntuacion) for performance
+- Full review details can be obtained using the `/establecimientos/:id/resenias` endpoint
+- Establishments with no reviews will have an empty `resenias` array
+- The `metadata` field can contain any JSON structure for extensibility

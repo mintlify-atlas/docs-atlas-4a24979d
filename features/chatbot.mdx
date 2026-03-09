@@ -1,0 +1,537 @@
+---
+title: 'AI Chatbot Assistant'
+description: 'AURA - Asistente Útil de Respuesta Automatizada powered by Google Gemini'
+icon: 'robot'
+---
+
+## Overview
+
+AURA (Asistente Útil de Respuesta Automatizada) is SaludMap's AI-powered chatbot assistant that helps users navigate the platform, answer questions about healthcare facilities, and provide guidance on using features.
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Natural Language" icon="comments">
+    Conversational interface powered by Google Gemini AI
+  </Card>
+  <Card title="Context-Aware" icon="brain">
+    Understands healthcare-related queries and platform navigation
+  </Card>
+  <Card title="Always Available" icon="clock">
+    Floating widget accessible from any page
+  </Card>
+  <Card title="Chat History" icon="list">
+    Maintains conversation context within sessions
+  </Card>
+</CardGroup>
+
+## User Interface
+
+### Chatbot Widget
+
+The chatbot appears as a floating button in the corner of the screen:
+
+```jsx ChatbotWidget.jsx
+export const ChatbotWidget = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  return (
+    <>
+      {/* Avatar — always visible */}
+      {!isOpen && (
+        <div className="chatbot-container">
+          <div className="chatbot-avatar" onClick={() => setIsOpen(true)}>
+            <img src={chatIcon} alt="Aura Assistant" />
+          </div>
+        </div>
+      )}
+      
+      {/* Modal when opened */}
+      {isOpen && (
+        <>
+          <div className="chat-overlay" onClick={handleClose} />
+          <div className="chat-window">
+            {/* Chat interface */}
+          </div>
+        </>
+      )}
+    </>
+  );
+};
+```
+
+<Frame>
+  <img src="/images/chatbot-widget.png" alt="AURA chatbot widget" />
+</Frame>
+
+### Chat Window
+
+When opened, the chatbot displays a modal dialog:
+
+```jsx
+<div className="chat-window">
+  <div className="chat-header">
+    <div className="header-content">
+      <img src={chatIcon} alt="Aura" className="header-avatar" />
+      <div className="envoltura-title">
+        <h3 className="title">Aura</h3>
+        <h6 className="title">Asistente Útil de Respuesta Automatizada</h6>
+      </div>
+    </div>
+    <button
+      onClick={handleClose}
+      className="close-btn"
+      aria-label="Cerrar chat"
+    >
+      ×
+    </button>
+  </div>
+  
+  <div className="chat-messages">
+    {messages.map((msg, index) => (
+      <div key={index} className={`message ${msg.sender}`}>
+        <p>{msg.text}</p>
+      </div>
+    ))}
+    {isLoading && (
+      <div className="message aura"><p>Escribiendo...</p></div>
+    )}
+    <div ref={messagesEndRef} />
+  </div>
+  
+  <form onSubmit={handleSend} className="chat-input-form">
+    <input
+      type="text"
+      value={input}
+      onChange={(e) => setInput(e.target.value)}
+      placeholder="Habla con AURA..."
+      disabled={isLoading}
+    />
+    <button type="submit" disabled={isLoading}>
+      <div className="send-icon"></div>
+    </button>
+  </form>
+</div>
+```
+
+## Message Handling
+
+### Sending Messages
+
+User messages are added to the chat and sent to the AI:
+
+```jsx
+const handleSend = async (e) => {
+  e.preventDefault();
+  if (input.trim().length === 0 || isLoading) return;
+
+  // Add user message
+  const userMessage = { text: input, sender: 'user' };
+  setMessages((prev) => [...prev, userMessage]);
+  setInput('');
+  setIsLoading(true);
+
+  try {
+    // Get AI response
+    const auraResponseText = await sendMessageToAura(input);
+
+    // Add AURA's response
+    const auraMessage = { text: auraResponseText, sender: 'aura' };
+    setMessages((prev) => [...prev, auraMessage]);
+  } catch (error) {
+    toast.error('Error al obtener respuesta de AURA');
+  } finally {
+    setIsLoading(false);
+  }
+};
+```
+
+### Auto-Scroll
+
+The chat automatically scrolls to the latest message:
+
+```jsx
+const messagesEndRef = useRef(null);
+
+const scrollToBottom = () => {
+  messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+};
+
+useEffect(scrollToBottom, [messages]);
+```
+
+## Backend Integration
+
+### Chatbot Service
+
+The service sends messages to the backend API:
+
+```jsx chatbotService.js
+import axios from 'axios';
+
+export const sendMessageToAura = async (userMessage) => {
+  try {
+    const response = await axios.post('/api/chatbot', {
+      message: userMessage
+    });
+    
+    return response.data.reply || 'Lo siento, no pude procesar tu solicitud.';
+  } catch (error) {
+    console.error('Error comunicándose con AURA:', error);
+    throw error;
+  }
+};
+```
+
+### Google Gemini Integration
+
+The backend uses Google's Gemini AI model:
+
+```javascript server.js (Backend)
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+
+app.post('/api/chatbot', async (req, res) => {
+  try {
+    const { message } = req.body;
+    
+    // System context for healthcare focus
+    const context = `You are AURA, a helpful assistant for SaludMap, 
+    a healthcare facility locator app. Help users find medical facilities, 
+    book appointments, and navigate the platform. Respond in Spanish.`;
+    
+    const prompt = `${context}\n\nUser: ${message}\nAURA:`;
+    
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    res.json({ reply: text });
+  } catch (error) {
+    console.error('Gemini API error:', error);
+    res.status(500).json({ error: 'Error generating response' });
+  }
+});
+```
+
+<Info>
+The backend requires a valid Google Gemini API key in the environment variables.
+</Info>
+
+## Message Styling
+
+### User vs Assistant Messages
+
+Messages are styled differently based on sender:
+
+```css ChatbotWidget.css
+.message {
+  margin: 8px 0;
+  padding: 12px 16px;
+  border-radius: 16px;
+  max-width: 80%;
+  word-wrap: break-word;
+}
+
+.message.user {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  align-self: flex-end;
+  margin-left: auto;
+}
+
+.message.aura {
+  background: #f3f4f6;
+  color: #1f2937;
+  align-self: flex-start;
+  border: 1px solid #e5e7eb;
+}
+```
+
+### Loading Indicator
+
+While AURA is typing, a loading message appears:
+
+```jsx
+{isLoading && (
+  <div className="message aura">
+    <p>Escribiendo...</p>
+  </div>
+)}
+```
+
+<Frame>
+  <img src="/images/chat-conversation.png" alt="Chat conversation" />
+</Frame>
+
+## Chat Features
+
+### Context Awareness
+
+AURA maintains conversation context throughout the session:
+
+```jsx
+const [messages, setMessages] = useState([]);
+
+// Messages are preserved until the widget is closed
+// This allows AURA to reference previous conversation
+```
+
+<Note>
+Chat history is cleared when the widget is closed. For persistent chat history, implement session storage or database persistence.
+</Note>
+
+### Error Handling
+
+Graceful error handling with user feedback:
+
+```jsx
+try {
+  const auraResponseText = await sendMessageToAura(input);
+  setMessages((prev) => [...prev, { text: auraResponseText, sender: 'aura' }]);
+} catch (error) {
+  toast.error('Error al obtener respuesta de AURA');
+  
+  // Add fallback message
+  setMessages((prev) => [...prev, {
+    text: 'Disculpa, estoy teniendo problemas técnicos. Por favor intenta de nuevo.',
+    sender: 'aura'
+  }]);
+}
+```
+
+## Use Cases
+
+AURA can assist with:
+
+<CardGroup cols={2}>
+  <Card title="Finding Facilities" icon="map-location-dot">
+    "¿Dónde está el hospital más cercano?"
+  </Card>
+  <Card title="Booking Help" icon="calendar">
+    "¿Cómo solicito un turno médico?"
+  </Card>
+  <Card title="Feature Guidance" icon="circle-question">
+    "¿Cómo funciona el modo offline?"
+  </Card>
+  <Card title="General Questions" icon="message-question">
+    "¿Qué especialidades están disponibles?"
+  </Card>
+</CardGroup>
+
+### Example Conversations
+
+<CodeGroup>
+```text Finding Facilities
+User: ¿Dónde puedo encontrar una clínica cerca?
+AURA: Puedes usar el mapa en la pestaña principal para ver clínicas cercanas. 
+      Asegúrate de que el filtro "Clínica" esté activado. 
+      ¿Necesitas ayuda con algo más específico?
+```
+
+```text Booking Appointments
+User: ¿Cómo pido un turno?
+AURA: Para solicitar un turno:
+      1. Selecciona un establecimiento en el mapa
+      2. Haz clic en "Solicitar Turno"
+      3. Elige una especialidad y horario
+      4. Confirma tu información
+      ¿Te gustaría que te guíe paso a paso?
+```
+
+```text Feature Questions
+User: ¿Qué es el modo offline?
+AURA: El modo offline te permite usar SaludMap sin conexión a internet.
+      Descarga un área desde el mapa y podrás ver establecimientos incluso sin datos.
+      ¿Quieres saber cómo descargar un área?
+```
+</CodeGroup>
+
+## Accessibility
+
+### Keyboard Navigation
+
+The chatbot supports keyboard shortcuts:
+
+```jsx
+<input
+  type="text"
+  value={input}
+  onChange={(e) => setInput(e.target.value)}
+  onKeyDown={(e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend(e);
+    }
+  }}
+  aria-label="Escribe tu mensaje"
+/>
+```
+
+### Screen Reader Support
+
+Aria labels provide context for screen readers:
+
+```jsx
+<button
+  onClick={handleClose}
+  className="close-btn"
+  aria-label="Cerrar chat"
+  title="Cerrar"
+>
+  ×
+</button>
+
+<button 
+  type="submit" 
+  disabled={isLoading}
+  aria-label="Enviar mensaje"
+>
+  <div className="send-icon"></div>
+</button>
+```
+
+## Styling
+
+### Floating Widget Position
+
+```css
+.chatbot-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.chatbot-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.chatbot-avatar:hover {
+  transform: scale(1.1);
+}
+```
+
+### Modal Overlay
+
+```css
+.chat-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+.chat-window {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 500px;
+  height: 600px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+```
+
+## Performance Optimization
+
+### Message Batching
+
+Prevent multiple simultaneous API calls:
+
+```jsx
+const [isLoading, setIsLoading] = useState(false);
+
+if (input.trim().length === 0 || isLoading) return;
+```
+
+### Debounced Input
+
+For future implementations, consider debouncing:
+
+```jsx
+import { useDebounce } from 'use-debounce';
+
+const [input, setInput] = useState('');
+const [debouncedInput] = useDebounce(input, 500);
+```
+
+## Future Enhancements
+
+<AccordionGroup>
+  <Accordion title="Multi-turn Conversations">
+    Implement conversation history persistence to maintain context across sessions.
+  </Accordion>
+  
+  <Accordion title="Quick Actions">
+    Add preset buttons for common queries: "Find nearest hospital", "Book appointment", etc.
+  </Accordion>
+  
+  <Accordion title="Voice Input">
+    Integrate Web Speech API for voice commands and responses.
+  </Accordion>
+  
+  <Accordion title="Rich Responses">
+    Support for embedded maps, appointment cards, and interactive elements in chat.
+  </Accordion>
+</AccordionGroup>
+
+## Related Features
+
+<CardGroup cols={2}>
+  <Card title="Map Search" icon="map" href="/features/map-search">
+    AURA can guide users through map navigation
+  </Card>
+  <Card title="Appointments" icon="calendar" href="/features/appointments">
+    Get help booking appointments via chat
+  </Card>
+  <Card title="Emergency" icon="circle-exclamation" href="/features/emergency">
+    Quick emergency guidance through AURA
+  </Card>
+</CardGroup>
+
+## Security Considerations
+
+<Warning>
+- **API Key Protection**: Never expose Gemini API keys in client-side code
+- **Input Sanitization**: Sanitize user input before sending to AI
+- **Rate Limiting**: Implement rate limits to prevent API abuse
+- **Content Filtering**: Add content moderation for inappropriate queries
+</Warning>
+
+## Technical Stack
+
+```json package.json
+{
+  "dependencies": {
+    "@google/generative-ai": "^0.x",
+    "axios": "^1.x",
+    "react": "^18.x",
+    "sonner": "^1.x"
+  }
+}
+```
+
+<Tip>
+Configure custom system prompts in the backend to tailor AURA's responses to your specific use case and branding.
+</Tip>

@@ -1,0 +1,115 @@
+---
+title: 'Register'
+api: 'POST /usuarios/register'
+description: 'Create a new user account'
+---
+
+## Overview
+
+Registers a new user in the SaludMap system. All new users are automatically assigned the `"usuario"` role. Only administrators can later upgrade a user's role to `"admin"` through a separate endpoint.
+
+## Request Body
+
+<ParamField body="nombre" type="string" required>
+  User's first name
+</ParamField>
+
+<ParamField body="apellido" type="string" required>
+  User's last name
+</ParamField>
+
+<ParamField body="mail" type="string" required>
+  User's email address. Must be unique in the system
+</ParamField>
+
+<ParamField body="contrasenia" type="string" required>
+  User's password. Will be securely hashed using bcrypt before storage
+</ParamField>
+
+## Response
+
+<ResponseField name="id" type="number">
+  Unique identifier for the newly created user
+</ResponseField>
+
+<ResponseField name="nombre" type="string">
+  User's first name
+</ResponseField>
+
+<ResponseField name="apellido" type="string">
+  User's last name
+</ResponseField>
+
+<ResponseField name="mail" type="string">
+  User's email address
+</ResponseField>
+
+<ResponseField name="rol" type="string">
+  User's role, always `"usuario"` for new registrations
+</ResponseField>
+
+<ResponseField name="token" type="string">
+  JWT token for immediate authentication after registration. The token payload includes `sub` (user ID), `mail`, and `rol`
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X POST https://api.saludmap.com/usuarios/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "María",
+    "apellido": "García",
+    "mail": "maria.garcia@example.com",
+    "contrasenia": "mySecurePassword123"
+  }'
+```
+
+## Example Response
+
+```json
+{
+  "id": 43,
+  "nombre": "María",
+  "apellido": "García",
+  "mail": "maria.garcia@example.com",
+  "rol": "usuario",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+## Error Responses
+
+### 409 Conflict
+
+Returned when the email address is already registered.
+
+```json
+{
+  "statusCode": 409,
+  "message": "El mail ya está registrado"
+}
+```
+
+### 400 Bad Request
+
+Returned when request validation fails (missing fields or invalid data).
+
+```json
+{
+  "statusCode": 400,
+  "message": "Validation failed"
+}
+```
+
+## Implementation Details
+
+The registration process:
+- Checks if the email is already registered and returns a 409 Conflict if it exists
+- Hashes the password using bcrypt with a cost factor of 10 before storing
+- Automatically assigns the `"usuario"` role (admin role can only be granted by existing admins)
+- Creates the user in the database via Prisma
+- Generates a JWT token for immediate authentication
+- Returns the user data and token, allowing the user to start using the application right away
+
+See: `usuarios.controller.ts:23-39` and `usuarios.service.ts:11-31`

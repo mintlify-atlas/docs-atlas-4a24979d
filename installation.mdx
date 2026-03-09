@@ -1,0 +1,503 @@
+---
+title: 'Developer Installation'
+description: 'Step-by-step guide to set up SaludMap development environment locally'
+---
+
+## Overview
+
+This guide will help you set up the SaludMap application on your local machine for development purposes. SaludMap consists of two main components:
+- **Frontend**: React application built with Vite
+- **Backend**: NestJS API server with Prisma ORM
+
+<Note>
+Make sure you have all prerequisites installed before proceeding with the installation.
+</Note>
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed on your system:
+
+<CardGroup cols={2}>
+  <Card title="Node.js" icon="node-js">
+    Version 18.x or higher required
+  </Card>
+  
+  <Card title="npm" icon="package">
+    Version 9.x or higher (comes with Node.js)
+  </Card>
+  
+  <Card title="MySQL" icon="database">
+    Version 8.x or higher for the database
+  </Card>
+  
+  <Card title="Git" icon="git-alt">
+    For cloning the repository
+  </Card>
+</CardGroup>
+
+### Verify Installation
+
+Check that you have the correct versions installed:
+
+```bash
+node --version
+# Should output v18.x.x or higher
+
+npm --version
+# Should output 9.x.x or higher
+
+mysql --version
+# Should output MySQL 8.x or higher
+```
+
+<Warning>
+Using older versions may cause compatibility issues. Please upgrade to the recommended versions.
+</Warning>
+
+## Installation Steps
+
+<Steps>
+  <Step title="Clone the Repository">
+    Clone the SaludMap repository to your local machine:
+    
+    ```bash
+    git clone https://github.com/GabyAvila1993/SaludMap.git
+    cd SaludMap
+    ```
+    
+    This creates a `SaludMap` directory containing both the Frontend and backend folders.
+  </Step>
+
+  <Step title="Install NestJS CLI Globally (Optional)">
+    If you plan to work extensively with the backend, install the NestJS CLI globally:
+    
+    ```bash
+    npm install -g @nestjs/cli
+    ```
+    
+    <Info>
+    This step is optional. The backend will work without the global CLI installation.
+    </Info>
+  </Step>
+
+  <Step title="Install Backend Dependencies">
+    Navigate to the backend directory and install all required packages:
+    
+    ```bash
+    cd backend
+    npm install
+    ```
+    
+    This installs all dependencies including:
+    - NestJS framework and modules
+    - Prisma ORM
+    - Authentication packages (passport, JWT, bcrypt)
+    - Google Generative AI for chatbot
+    - And all other backend dependencies
+    
+    <Tip>
+    The installation may take a few minutes depending on your internet connection.
+    </Tip>
+  </Step>
+
+  <Step title="Install Frontend Dependencies">
+    Navigate to the frontend directory and install packages:
+    
+    ```bash
+    cd ../Frontend
+    npm install
+    ```
+    
+    This installs:
+    - React and React DOM
+    - Vite build tool
+    - Leaflet for maps
+    - Chart.js for analytics
+    - i18next for internationalization
+    - All UI and utility libraries
+  </Step>
+
+  <Step title="Configure Environment Variables">
+    ### Backend Configuration
+    
+    Create a `.env` file in the `backend` directory:
+    
+    ```bash
+    cd ../backend
+    touch .env
+    ```
+    
+    Add the following environment variables:
+    
+    ```bash .env
+    # Database Configuration
+    DATABASE_URL="mysql://username:password@localhost:3306/saludmap"
+    
+    # JWT Configuration
+    JWT_SECRET="your-secret-key-here"
+    JWT_EXPIRATION="24h"
+    
+    # Google Generative AI (for chatbot)
+    GOOGLE_AI_API_KEY="your-google-ai-api-key"
+    
+    # Server Configuration
+    PORT=3000
+    NODE_ENV="development"
+    
+    # CORS Configuration
+    FRONTEND_URL="http://localhost:5173"
+    ```
+    
+    <Warning>
+    Replace `username` and `password` with your MySQL credentials. Never commit the `.env` file to version control.
+    </Warning>
+    
+    ### Frontend Configuration (Optional)
+    
+    If you need to customize the API endpoint, create a `.env` file in the `Frontend` directory:
+    
+    ```bash .env
+    VITE_API_URL=http://localhost:3000
+    ```
+    
+    <Info>
+    The frontend defaults to `http://localhost:3000` for the backend API.
+    </Info>
+  </Step>
+
+  <Step title="Set Up the Database">
+    ### Create MySQL Database
+    
+    Connect to your MySQL server and create the database:
+    
+    ```sql
+    CREATE DATABASE saludmap;
+    ```
+    
+    Or use the MySQL command line:
+    
+    ```bash
+    mysql -u root -p -e "CREATE DATABASE saludmap;"
+    ```
+    
+    ### Generate Prisma Client
+    
+    From the `backend` directory, generate the Prisma client:
+    
+    ```bash
+    npm run prisma:generate
+    ```
+    
+    This creates the Prisma client based on your schema in `backend/generated/`.
+    
+    ### Push Database Schema
+    
+    Apply the Prisma schema to your database:
+    
+    ```bash
+    npm run prisma:push
+    ```
+    
+    This creates all the necessary tables:
+    - `Establecimiento` (Facilities)
+    - `Especialidad` (Specialties)
+    - `EstablecimientoEspecialidad` (Facility-Specialty relations)
+    - `Usuario` (Users)
+    - `Turno` (Appointments)
+    - `Resenia` (Reviews)
+    - `Ubicacion` (Saved Locations)
+    
+    <Tip>
+    Use `npm run prisma:studio` to open a visual database browser and explore your data.
+    </Tip>
+  </Step>
+
+  <Step title="Start the Development Servers">
+    You need to run both the backend and frontend servers simultaneously.
+    
+    ### Option 1: Using Two Terminal Windows
+    
+    **Terminal 1 - Backend Server:**
+    
+    ```bash
+    cd backend
+    npm run start:dev
+    ```
+    
+    The backend will start on `http://localhost:3000` with hot-reloading enabled.
+    
+    **Terminal 2 - Frontend Server:**
+    
+    ```bash
+    cd Frontend
+    npm run dev
+    ```
+    
+    The frontend will start on `http://localhost:5173` (default Vite port).
+    
+    ### Option 2: Using a Terminal Multiplexer
+    
+    If you use `tmux` or similar tools, you can split your terminal and run both servers in the same window.
+    
+    <Note>
+    Both servers support hot-reloading, so your changes will be reflected immediately during development.
+    </Note>
+  </Step>
+</Steps>
+
+## Verify Installation
+
+Once both servers are running:
+
+1. **Open your browser** and navigate to `http://localhost:5173`
+2. **Check the map loads** - You should see an interactive map interface
+3. **Test location services** - Allow location permissions when prompted
+4. **Verify API connection** - The app should load facilities on the map
+5. **Check console** - No error messages should appear in the browser console
+
+<Info>
+If you see CORS errors, verify that your `FRONTEND_URL` in the backend `.env` matches your frontend URL.
+</Info>
+
+## Development Scripts
+
+### Backend Scripts
+
+```bash
+# Start development server with watch mode
+npm run start:dev
+
+# Start in debug mode
+npm run start:debug
+
+# Build for production
+npm run build
+
+# Start production server
+npm run start:prod
+
+# Generate Prisma client
+npm run prisma:generate
+
+# Push schema changes to database
+npm run prisma:push
+
+# Open Prisma Studio (database GUI)
+npm run prisma:studio
+
+# Run tests
+npm run test
+
+# Format code
+npm run format
+
+# Lint code
+npm run lint
+```
+
+### Frontend Scripts
+
+```bash
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+
+# Lint code
+npm run lint
+```
+
+## Project Structure
+
+```
+SaludMap/
+├── backend/
+│   ├── src/
+│   │   ├── auth/              # Authentication module
+│   │   ├── establecimientos/  # Facilities endpoints
+│   │   ├── especialidades/    # Specialties endpoints
+│   │   ├── turnos/            # Appointments endpoints
+│   │   ├── resenias/          # Reviews endpoints
+│   │   ├── usuarios/          # Users endpoints
+│   │   ├── chatbot/           # AI chatbot integration
+│   │   └── main.ts            # Application entry point
+│   ├── prisma/
+│   │   └── schema.prisma      # Database schema
+│   ├── generated/             # Prisma client (auto-generated)
+│   └── package.json
+│
+├── Frontend/
+│   ├── src/
+│   │   ├── components/        # React components
+│   │   ├── services/          # API services
+│   │   ├── i18n/              # Internationalization
+│   │   ├── App.jsx            # Main app component
+│   │   └── main.jsx           # Application entry point
+│   ├── public/                # Static assets
+│   └── package.json
+│
+└── README.md
+```
+
+## Database Schema
+
+The Prisma schema defines the following main models:
+
+<CodeGroup>
+```prisma Establecimiento
+model Establecimiento {
+  id             Int      @id @default(autoincrement())
+  lat            Float
+  lng            Float
+  nombre         String
+  tipo           String
+  direccion      String?
+  telefono       String?
+  horarios       String?  @db.Text
+  metadata       Json?
+  turnos         Turno[]
+  resenias       Resenia[]
+  especialidades EstablecimientoEspecialidad[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+```
+
+```prisma Usuario
+model Usuario {
+  id          Int       @id @default(autoincrement())
+  nombre      String
+  apellido    String
+  mail        String    @unique
+  contrasenia String
+  rol         String    @default("usuario")
+  turnos      Turno[]
+  resenias    Resenia[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+```
+
+```prisma Turno
+model Turno {
+  id                Int      @id @default(autoincrement())
+  usuarioId         Int
+  establecimientoId Int
+  especialidadId    Int
+  fecha             DateTime
+  hora              String?
+  estado            String   @default("pendiente")
+  usuario           Usuario
+  establecimiento   Establecimiento
+  especialidad      Especialidad
+  resenia           Resenia?
+}
+```
+</CodeGroup>
+
+## Common Issues and Solutions
+
+### Database Connection Errors
+
+<AccordionGroup>
+  <Accordion title="Error: Can't connect to MySQL server">
+    **Solution:**
+    - Verify MySQL is running: `systemctl status mysql` (Linux) or check Services (Windows)
+    - Check your `DATABASE_URL` in `.env` has correct credentials
+    - Ensure the database `saludmap` exists
+    - Test connection: `mysql -u username -p`
+  </Accordion>
+
+  <Accordion title="Error: Access denied for user">
+    **Solution:**
+    - Verify username and password in `DATABASE_URL`
+    - Grant privileges: `GRANT ALL PRIVILEGES ON saludmap.* TO 'username'@'localhost';`
+    - Flush privileges: `FLUSH PRIVILEGES;`
+  </Accordion>
+</AccordionGroup>
+
+### CORS Issues
+
+<Accordion title="CORS policy blocked the request">
+  **Solution:**
+  - Verify `FRONTEND_URL` in backend `.env` matches your frontend URL
+  - Default should be `http://localhost:5173`
+  - Restart the backend server after changing environment variables
+</Accordion>
+
+### Port Already in Use
+
+<Accordion title="Port 3000 or 5173 already in use">
+  **Solution:**
+  
+  **For Backend (port 3000):**
+  ```bash
+  # Find process using port 3000
+  lsof -i :3000  # macOS/Linux
+  netstat -ano | findstr :3000  # Windows
+  
+  # Kill the process or change port in backend .env
+  PORT=3001
+  ```
+  
+  **For Frontend (port 5173):**
+  ```bash
+  # Vite will automatically try the next available port
+  # Or specify in vite.config.js
+  ```
+</Accordion>
+
+### Prisma Issues
+
+<Accordion title="Prisma Client not generated">
+  **Solution:**
+  ```bash
+  cd backend
+  npm run prisma:generate
+  ```
+  
+  If issues persist:
+  ```bash
+  # Remove generated folder and regenerate
+  rm -rf generated
+  npm run prisma:generate
+  ```
+</Accordion>
+
+## Next Steps
+
+Now that you have SaludMap running locally:
+
+<CardGroup cols={2}>
+  <Card title="Explore the API" icon="code">
+    Check the backend endpoints and test with tools like Postman or Thunder Client
+  </Card>
+  
+  <Card title="Study the Components" icon="react">
+    Explore the React components in `Frontend/src/components/`
+  </Card>
+  
+  <Card title="Database Management" icon="database">
+    Use Prisma Studio (`npm run prisma:studio`) to view and edit data
+  </Card>
+  
+  <Card title="Customize Features" icon="wrench">
+    Start building new features or modifying existing functionality
+  </Card>
+</CardGroup>
+
+## Additional Resources
+
+- [NestJS Documentation](https://docs.nestjs.com/)
+- [Prisma Documentation](https://www.prisma.io/docs)
+- [React Documentation](https://react.dev/)
+- [Vite Documentation](https://vitejs.dev/)
+- [Leaflet Documentation](https://leafletjs.com/reference.html)
+
+---
+
+You're all set! Start developing with SaludMap and building amazing healthcare location features.

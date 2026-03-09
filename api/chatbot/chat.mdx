@@ -1,0 +1,201 @@
+---
+title: 'Send Chat Message'
+api: 'POST /chatbot/message'
+---
+
+Sends a message to the SaludMap AI chatbot powered by Google Gemini and receives a response. The chatbot can answer questions about SaludMap features, healthcare information, and help users navigate the platform.
+
+## Request Body
+
+<ParamField body="message" type="string | string[]" required>
+  The message to send to the chatbot. Can be a single string or an array of strings (which will be joined with spaces). Must be between 1-1000 characters.
+</ParamField>
+
+<ParamField body="userId" type="string">
+  Optional user identifier for tracking conversation history
+</ParamField>
+
+<ParamField body="sessionId" type="string">
+  Optional session identifier for maintaining conversation context
+</ParamField>
+
+## Response
+
+<ResponseField name="success" type="boolean">
+  Indicates if the request was successful
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Response data object
+  
+  <ResponseField name="userMessage" type="string">
+    The processed message sent by the user
+  </ResponseField>
+  
+  <ResponseField name="botResponse" type="string">
+    The AI-generated response from the chatbot
+  </ResponseField>
+  
+  <ResponseField name="timestamp" type="string">
+    ISO 8601 timestamp of when the response was generated
+  </ResponseField>
+</ResponseField>
+
+## Example Requests
+
+### Simple Message
+
+```json
+{
+  "message": "¿Cómo puedo reservar un turno médico?"
+}
+```
+
+### Message with Context
+
+```json
+{
+  "message": "¿Qué especialidades están disponibles?",
+  "userId": "user-123",
+  "sessionId": "session-abc-456"
+}
+```
+
+### Array Message (Multiple Parts)
+
+```json
+{
+  "message": [
+    "Necesito un turno con un cardiólogo",
+    "en el Hospital Central",
+    "para la próxima semana"
+  ]
+}
+```
+
+## Example Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "userMessage": "¿Cómo puedo reservar un turno médico?",
+    "botResponse": "Para reservar un turno médico en SaludMap, sigue estos pasos:\n\n1. Navega por el mapa interactivo o usa la búsqueda para encontrar el establecimiento de salud que prefieras\n2. Selecciona el establecimiento y haz clic en 'Reservar Turno'\n3. Elige la especialidad médica que necesitas\n4. Selecciona una fecha y hora disponible\n5. Confirma tu reserva\n\n¿Necesitas ayuda con algún paso específico?",
+    "timestamp": "2026-03-09T18:15:30.000Z"
+  }
+}
+```
+
+## Error Responses
+
+### Empty Message
+
+```json
+{
+  "statusCode": 400,
+  "message": "El mensaje no puede estar vacío"
+}
+```
+
+### Validation Error (Message Too Long)
+
+```json
+{
+  "statusCode": 400,
+  "message": "Error de validación",
+  "details": [
+    {
+      "code": "too_big",
+      "maximum": 1000,
+      "type": "string",
+      "inclusive": true,
+      "message": "El mensaje es demasiado largo",
+      "path": ["message"]
+    }
+  ]
+}
+```
+
+### Service Error
+
+```json
+{
+  "statusCode": 500,
+  "message": "Error al procesar el mensaje"
+}
+```
+
+## Additional Endpoints
+
+### Get Feature Information
+
+```bash
+POST /chatbot/feature
+Content-Type: application/json
+
+{
+  "featureId": "map_interactive"
+}
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "featureId": "map_interactive",
+    "response": "El Mapa Interactivo de SaludMap te permite visualizar todos los establecimientos de salud en tu área. Puedes filtrar por especialidad, ver información detallada de cada centro, y obtener direcciones.",
+    "timestamp": "2026-03-09T18:20:00.000Z"
+  }
+}
+```
+
+### Health Check
+
+```bash
+GET /chatbot/health
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "message": "Chatbot service is running",
+  "timestamp": "2026-03-09T18:25:00.000Z",
+  "version": "1.0.0"
+}
+```
+
+### Get Context
+
+```bash
+GET /chatbot/context
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "projectName": "SaludMap",
+    "description": "Tu Guía Sanitaria y Veterinaria",
+    "availableFeatures": [
+      "Mapa Interactivo",
+      "Reserva de Turnos",
+      "Modo Offline",
+      "Soporte Multilingüe",
+      "Integración con Seguros"
+    ]
+  }
+}
+```
+
+## Validation Rules
+
+- Message must not be empty after trimming whitespace
+- Message length must be between 1 and 1000 characters
+- If message is an array, it will be joined with spaces
+- userId and sessionId are optional but recommended for better conversation tracking

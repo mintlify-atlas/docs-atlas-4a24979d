@@ -1,0 +1,229 @@
+---
+title: Language Support and Settings
+description: Learn how to change the language and customize your SaludMap experience
+---
+
+SaludMap is a multilingual application that supports multiple languages to serve users across different regions.
+
+## Supported Languages
+
+SaludMap currently supports three languages:
+
+- **🇪🇸 Español (ES)** - Spanish
+- **🇬🇧 English (EN)** - English  
+- **🇫🇷 Français (FR)** - French
+
+## Changing Your Language
+
+<Steps>
+  <Step title="Locate the language selector">
+    Look for the language selector in the navigation bar. It displays a flag icon and the current language code (e.g., "ES", "EN", or "FR").
+  </Step>
+  
+  <Step title="Open the language menu">
+    Click on the language button. A dropdown menu will appear showing all available languages with their flags and names.
+  </Step>
+  
+  <Step title="Select your preferred language">
+    Click on the language you want to use. The options are:
+    - **Español** - Spanish interface
+    - **English** - English interface
+    - **Français** - French interface
+  </Step>
+  
+  <Step title="Interface updates automatically">
+    The entire application interface will immediately switch to your selected language, including:
+    - Navigation menus
+    - Button labels
+    - Form fields
+    - Messages and notifications
+    - Map controls
+  </Step>
+</Steps>
+
+## Language Persistence
+
+Your language preference is automatically saved:
+- Stored in browser local storage
+- Persists across sessions
+- No need to log in to save your preference
+- Applies immediately on your next visit
+
+## What Gets Translated
+
+### User Interface Elements
+All interface elements are translated, including:
+- **Navigation** - Menu items, page titles
+- **Buttons** - Action buttons, submit buttons
+- **Forms** - Input labels, placeholders, validation messages
+- **Modals** - Dialog titles, descriptions, actions
+- **Map Controls** - All map interaction buttons and labels
+
+### Common Sections
+- Authentication (login/register)
+- Appointment booking
+- Reviews and ratings
+- Saved locations
+- Emergency services
+- Facility information
+
+### Dynamic Content
+Translations apply to:
+- Success and error messages
+- Loading states
+- Empty states
+- Confirmation dialogs
+- Toast notifications
+
+## Language-Specific Features
+
+### Date and Time Formats
+Dates and times adapt to the selected language:
+
+**Spanish (ES):**
+- "9 de marzo de 2026"
+- "15:30" (24-hour format)
+
+**English (EN):**
+- "March 9, 2026"
+- "3:30 PM" (12-hour format)
+
+**French (FR):**
+- "9 mars 2026"
+- "15:30" (24-hour format)
+
+### Number Formats
+Numbers and coordinates may display differently based on locale conventions.
+
+### Emergency Numbers
+The emergency services widget displays appropriate numbers based on country/region detection, not just language.
+
+## Translation Keys
+
+SaludMap uses i18n (internationalization) with structured translation keys:
+
+### Key Categories
+- `common.*` - Shared terms (loading, error, success, etc.)
+- `nav.*` - Navigation elements
+- `auth.*` - Authentication and user account
+- `map.*` - Map interface and controls
+- `appointments.*` - Appointment booking system
+- `emergency.*` - Emergency services widget
+
+### Example Translations
+
+**Map Controls:**
+- ES: "Mi Ubicación"
+- EN: "My Location"
+- FR: "Ma Position"
+
+**Save Location:**
+- ES: "Guardar Ubicación"
+- EN: "Save Location"
+- FR: "Enregistrer l'emplacement"
+
+**Request Appointment:**
+- ES: "Solicitar Turno"
+- EN: "Request Appointment"
+- FR: "Demander un rendez-vous"
+
+## Theme Settings
+
+In addition to language, SaludMap supports theme customization:
+
+### Available Themes
+- **Claro** (Light) - Light mode with bright backgrounds
+- **Oscuro** (Dark) - Dark mode for reduced eye strain
+
+### Changing Your Theme
+
+<Steps>
+  <Step title="Find the theme toggle">
+    Look for the theme button in the navigation or settings area (usually a sun/moon icon).
+  </Step>
+  
+  <Step title="Toggle the theme">
+    Click the theme button to switch between light (Claro) and dark (Oscuro) modes.
+  </Step>
+  
+  <Step title="Theme is saved">
+    Your preference is saved in local storage and persists across sessions.
+  </Step>
+</Steps>
+
+## Browser Language Detection
+
+When you first visit SaludMap:
+- The app attempts to detect your browser's language setting
+- If supported, it automatically sets the interface to your browser language
+- If not supported, it defaults to Spanish (ES)
+
+## Accessibility Considerations
+
+### Screen Readers
+All translated text is accessible to screen readers with proper ARIA labels in the selected language.
+
+### Form Validation
+Error messages and validation hints appear in your selected language.
+
+### Keyboard Navigation
+Keyboard shortcuts and navigation work consistently across all languages.
+
+## Regional Differences
+
+While the interface translates completely, some content may have regional variations:
+
+### Healthcare Terminology
+- Medical terms may vary by region
+- Facility names remain in their original language
+- User-generated content (reviews) appears as written
+
+### Address Formats
+- Addresses display as provided by the data source
+- May not follow local formatting conventions
+- Coordinates are universal
+
+## Troubleshooting
+
+**Language not changing:**
+- Hard refresh your browser (Ctrl+F5 or Cmd+Shift+R)
+- Clear browser cache
+- Check if JavaScript is enabled
+
+**Mixed languages appearing:**
+- Some facility names and user content remain in original language
+- This is expected behavior for user-generated content
+
+**Wrong language on first visit:**
+- Manually select your preferred language from the dropdown
+- The app will remember your choice for future visits
+
+<Note>
+  Language preference is stored locally in your browser. If you use SaludMap on multiple devices or browsers, you'll need to set your language preference on each one.
+</Note>
+
+## Contributing Translations
+
+If you notice translation issues or want to contribute:
+- Translation files are located in `/src/i18n/locales/`
+- Each language has a JSON file (`es.json`, `en.json`, `fr.json`)
+- Follow the existing key structure when adding translations
+- Ensure all three language files have matching keys
+
+### Translation File Structure
+
+```json
+{
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error"
+  },
+  "map": {
+    "title": "Mapa de Servicios de Salud"
+  }
+}
+```
+
+<Tip>
+  If you frequently switch between languages, bookmark or pin the language selector for quick access. The interface responds instantly to language changes without requiring a page reload.
+</Tip>

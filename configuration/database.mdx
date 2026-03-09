@@ -1,0 +1,496 @@
+---
+title: Database Configuration
+description: Set up and configure the MySQL database with Prisma ORM for SaludMap
+---
+
+# Database Configuration
+
+SaludMap uses **MySQL** as the database and **Prisma** as the ORM (Object-Relational Mapping) tool. This guide covers database setup, schema management, and common operations.
+
+## Database Provider
+
+The Prisma schema is configured for MySQL in `backend/prisma/schema.prisma:8-11`:
+
+```prisma
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+```
+
+## Connection String
+
+Set the database connection URL in your `.env` file:
+
+```bash
+DATABASE_URL="mysql://username:password@host:port/database_name"
+```
+
+### Connection String Format
+
+```
+mysql://USER:PASSWORD@HOST:PORT/DATABASE?schema=SCHEMA
+```
+
+**Parameters:**
+- `USER` - Database username
+- `PASSWORD` - Database password
+- `HOST` - Database host (e.g., `localhost`, `127.0.0.1`, or remote host)
+- `PORT` - Database port (default: `3306`)
+- `DATABASE` - Database name
+- `schema` - (Optional) MySQL schema name
+
+### Example Connections
+
+**Local development:**
+```bash
+DATABASE_URL="mysql://root:password@localhost:3306/saludmap"
+```
+
+**Remote database:**
+```bash
+DATABASE_URL="mysql://saludmap_user:SecurePass123@db.example.com:3306/saludmap_production"
+```
+
+**Docker container:**
+```bash
+DATABASE_URL="mysql://saludmap:password@mysql-container:3306/saludmap"
+```
+
+## Prisma Client Configuration
+
+The Prisma client is configured to output to a custom directory in `backend/prisma/schema.prisma:3-6`:
+
+```prisma
+generator client {
+  provider = "prisma-client"
+  output   = "../generated"
+}
+```
+
+This generates the Prisma Client in `backend/generated/` instead of the default `node_modules/.prisma/client`.
+
+## Database Schema
+
+SaludMap's database schema includes the following models:
+
+### Core Models
+
+#### Establecimiento (Healthcare Facility)
+
+```prisma
+model Establecimiento {
+  id             Int                          @id @default(autoincrement())
+  lat            Float
+  lng            Float
+  nombre         String
+  tipo           String
+  direccion      String?
+  telefono       String?
+  horarios       String?                      @db.Text
+  metadata       Json?
+  turnos         Turno[]
+  resenias       Resenia[]                    @relation("ReseniasPorEstablecimiento")
+  especialidades EstablecimientoEspecialidad[]
+  createdAt      DateTime                     @default(now())
+  updatedAt      DateTime                     @updatedAt
+
+  @@unique([lat, lng])
+  @@index([lat, lng])
+}
+```
+
+**Key features:**
+- Geolocation with `lat`/`lng` coordinates (indexed for performance)
+- Unique constraint on coordinates to prevent duplicates
+- JSON metadata field for flexible data storage
+- Relations to appointments, reviews, and specialties
+
+#### Usuario (User)
+
+```prisma
+model Usuario {
+  id          Int        @id @default(autoincrement())
+  nombre      String
+  apellido    String
+  mail        String     @unique
+  contrasenia String
+  rol         String     @default("usuario") // "usuario" | "admin"
+  turnos      Turno[]
+  resenias    Resenia[]  @relation("ReseniasPorUsuario")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+```
+
+**Key features:**
+- Unique email constraint
+- Role-based access control (default: "usuario")
+- Automatic timestamp management
+
+#### Turno (Appointment)
+
+```prisma
+model Turno {
+  id                Int             @id @default(autoincrement())
+  usuarioId         Int
+  establecimientoId Int
+  especialidadId    Int
+  fecha             DateTime
+  hora              String?
+  estado            String          @default("pendiente")
+  usuario           Usuario         @relation(fields: [usuarioId], references: [id])
+  establecimiento   Establecimiento @relation(fields: [establecimientoId], references: [id])
+  especialidad      Especialidad    @relation(fields: [especialidadId], references: [id])
+  resenia           Resenia?
+
+  @@index([usuarioId])
+  @@index([establecimientoId])
+  @@index([especialidadId])
+}
+```
+
+**Key features:**
+- Links users, facilities, and specialties
+- Status tracking (default: "pendiente")
+- Indexed foreign keys for performance
+- Optional review relation
+
+#### Especialidad (Medical Specialty)
+
+```prisma
+model Especialidad {
+  id               Int                          @id @default(autoincrement())
+  nombre           String                       @unique
+  descripcion      String?                      @db.Text
+  establecimientos EstablecimientoEspecialidad[]
+  turnos           Turno[]
+  createdAt        DateTime                     @default(now())
+  updatedAt        DateTime                     @updatedAt
+}
+```
+
+#### EstablecimientoEspecialidad (Junction Table)
+
+```prisma
+model EstablecimientoEspecialidad {
+  id                  Int             @id @default(autoincrement())
+  establecimientoId   Int
+  especialidadId      Int
+  horariosDisponibles String?         @db.Text
+  establecimiento     Establecimiento @relation(fields: [establecimientoId], references: [id])
+  especialidad        Especialidad    @relation(fields: [especialidadId], references: [id])
+
+  @@unique([establecimientoId, especialidadId])
+  @@index([establecimientoId])
+  @@index([especialidadId])
+}
+```
+
+**Key features:**
+- Many-to-many relationship between facilities and specialties
+- Stores specialty-specific schedules
+- Unique constraint prevents duplicate associations
+
+#### Resenia (Review)
+
+```prisma
+model Resenia {
+  id                Int             @id @default(autoincrement())
+  usuarioId         Int
+  establecimientoId Int
+  turnoId           Int             @unique
+  puntuacion        Int
+  comentario        String          @db.Text
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  usuario           Usuario         @relation("ReseniasPorUsuario", fields: [usuarioId], references: [id])
+  establecimiento   Establecimiento @relation("ReseniasPorEstablecimiento", fields: [establecimientoId], references: [id])
+  turno             Turno           @relation(fields: [turnoId], references: [id])
+
+  @@index([establecimientoId])
+  @@index([usuarioId])
+}
+```
+
+**Key features:**
+- One review per appointment (unique turnoId)
+- Indexed for querying by facility or user
+- Timestamp tracking
+
+#### Ubicacion (Saved Location)
+
+```prisma
+model Ubicacion {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  direccion String
+  lat       Float
+  lng       Float
+  createdAt DateTime @default(now())
+}
+```
+
+## Database Operations
+
+### Initial Setup
+
+1. **Create the database:**
+
+```bash
+mysql -u root -p
+```
+
+```sql
+CREATE DATABASE saludmap CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'saludmap_user'@'localhost' IDENTIFIED BY 'your_password';
+GRANT ALL PRIVILEGES ON saludmap.* TO 'saludmap_user'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+```
+
+2. **Configure the connection string** in `.env`:
+
+```bash
+DATABASE_URL="mysql://saludmap_user:your_password@localhost:3306/saludmap"
+```
+
+3. **Run migrations:**
+
+```bash
+cd backend
+npx prisma migrate dev
+```
+
+### Generate Prisma Client
+
+After schema changes, regenerate the Prisma Client:
+
+```bash
+cd backend
+npx prisma generate
+```
+
+This creates TypeScript types and the client in `backend/generated/`.
+
+### Create Migrations
+
+When you modify `schema.prisma`:
+
+```bash
+cd backend
+npx prisma migrate dev --name describe_your_changes
+```
+
+Example:
+```bash
+npx prisma migrate dev --name add_user_avatar_field
+```
+
+### Apply Migrations in Production
+
+```bash
+cd backend
+npx prisma migrate deploy
+```
+
+<Warning>
+  Always backup your database before running migrations in production!
+</Warning>
+
+### Seed the Database
+
+Create a seed script at `backend/prisma/seed.ts`:
+
+```typescript
+import { PrismaClient } from '../generated';
+
+const prisma = new PrismaClient();
+
+async function main() {
+  // Create specialties
+  const cardiologia = await prisma.especialidad.create({
+    data: {
+      nombre: 'Cardiología',
+      descripcion: 'Especialidad médica del corazón',
+    },
+  });
+
+  // Create establishments
+  await prisma.establecimiento.create({
+    data: {
+      nombre: 'Hospital Central',
+      tipo: 'hospital',
+      lat: -34.6037,
+      lng: -58.3816,
+      direccion: 'Av. Corrientes 1234',
+      telefono: '+54 11 1234-5678',
+      especialidades: {
+        create: {
+          especialidadId: cardiologia.id,
+          horariosDisponibles: 'Lunes a Viernes 8:00-18:00',
+        },
+      },
+    },
+  });
+
+  console.log('Database seeded successfully');
+}
+
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
+```
+
+Run the seed:
+
+```bash
+cd backend
+npx prisma db seed
+```
+
+### Reset Database
+
+<Warning>
+  This will delete all data! Only use in development.
+</Warning>
+
+```bash
+cd backend
+npx prisma migrate reset
+```
+
+This command:
+1. Drops the database
+2. Creates a new database
+3. Applies all migrations
+4. Runs seed script (if configured)
+
+## Prisma Studio
+
+Prisma Studio provides a GUI to view and edit database data:
+
+```bash
+cd backend
+npx prisma studio
+```
+
+This opens a web interface at `http://localhost:5555` where you can browse and modify data.
+
+## Performance Optimization
+
+### Indexes
+
+The schema includes strategic indexes for common queries:
+
+```prisma
+@@index([lat, lng])        // Geolocation queries
+@@index([usuarioId])       // User lookups
+@@index([establecimientoId]) // Facility lookups
+```
+
+### Query Optimization Tips
+
+<AccordionGroup>
+  <Accordion title="Use select to limit fields">
+    ```typescript
+    const users = await prisma.usuario.findMany({
+      select: {
+        id: true,
+        nombre: true,
+        apellido: true,
+        // Exclude password and other sensitive fields
+      },
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="Use pagination for large datasets">
+    ```typescript
+    const establishments = await prisma.establecimiento.findMany({
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="Optimize relations with include">
+    ```typescript
+    const turno = await prisma.turno.findUnique({
+      where: { id: turnoId },
+      include: {
+        usuario: {
+          select: { nombre: true, apellido: true },
+        },
+        establecimiento: true,
+        especialidad: true,
+      },
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="Use connection pooling">
+    Configure connection pooling in your DATABASE_URL:
+    ```bash
+    DATABASE_URL="mysql://user:pass@host:3306/db?connection_limit=10"
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Backup and Restore
+
+### Backup Database
+
+```bash
+mysqldump -u saludmap_user -p saludmap > backup_$(date +%Y%m%d_%H%M%S).sql
+```
+
+### Restore Database
+
+```bash
+mysql -u saludmap_user -p saludmap < backup_20260309_120000.sql
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Connection refused">
+    - Verify MySQL is running: `sudo systemctl status mysql`
+    - Check host and port in DATABASE_URL
+    - Ensure firewall allows connections on port 3306
+  </Accordion>
+
+  <Accordion title="Authentication failed">
+    - Verify username and password in DATABASE_URL
+    - Check user permissions: `SHOW GRANTS FOR 'saludmap_user'@'localhost';`
+  </Accordion>
+
+  <Accordion title="Migration conflicts">
+    - Review migration history: `npx prisma migrate status`
+    - Reset migrations in development: `npx prisma migrate reset`
+    - In production, resolve conflicts manually before deploying
+  </Accordion>
+
+  <Accordion title="Prisma Client errors">
+    - Regenerate client: `npx prisma generate`
+    - Clear node_modules and reinstall: `rm -rf node_modules && npm install`
+    - Check that schema matches database: `npx prisma db pull`
+  </Accordion>
+</AccordionGroup>
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Prisma Documentation" icon="book" href="https://www.prisma.io/docs">
+    Official Prisma documentation
+  </Card>
+  
+  <Card title="MySQL Documentation" icon="database" href="https://dev.mysql.com/doc/">
+    MySQL reference manual
+  </Card>
+</CardGroup>

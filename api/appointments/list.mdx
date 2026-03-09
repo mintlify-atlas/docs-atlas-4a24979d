@@ -1,0 +1,173 @@
+---
+title: 'List Appointments'
+api: 'GET /turnos'
+---
+
+Retrieves a list of appointments, optionally filtered by user email and cancelled status.
+
+## Query Parameters
+
+<ParamField query="user" type="string">
+  Email address of the user to filter appointments by (optional)
+</ParamField>
+
+<ParamField query="includeCancelled" type="string">
+  Whether to include cancelled appointments. Accepts "true", "1", or any other value for false (default: false)
+</ParamField>
+
+## Response
+
+<ResponseField name="appointments" type="array">
+  Array of appointment objects
+  
+  <ResponseField name="id" type="number">
+    The unique identifier for the appointment
+  </ResponseField>
+  
+  <ResponseField name="usuarioId" type="number">
+    The ID of the user who booked the appointment
+  </ResponseField>
+  
+  <ResponseField name="establecimientoId" type="number">
+    The ID of the healthcare establishment
+  </ResponseField>
+  
+  <ResponseField name="especialidadId" type="number">
+    The ID of the medical specialty
+  </ResponseField>
+  
+  <ResponseField name="fecha" type="string">
+    The date of the appointment
+  </ResponseField>
+  
+  <ResponseField name="hora" type="string">
+    The time of the appointment
+  </ResponseField>
+  
+  <ResponseField name="estado" type="string">
+    The status of the appointment ("pendiente", "completado", "cancelado")
+  </ResponseField>
+  
+  <ResponseField name="usuario" type="object">
+    User information object
+    
+    <ResponseField name="id" type="number">
+      User ID
+    </ResponseField>
+    
+    <ResponseField name="nombre" type="string">
+      User first name
+    </ResponseField>
+    
+    <ResponseField name="apellido" type="string">
+      User last name
+    </ResponseField>
+    
+    <ResponseField name="mail" type="string">
+      User email address
+    </ResponseField>
+  </ResponseField>
+  
+  <ResponseField name="establecimiento" type="object">
+    Establishment information object
+    
+    <ResponseField name="id" type="number">
+      Establishment ID
+    </ResponseField>
+    
+    <ResponseField name="nombre" type="string">
+      Establishment name
+    </ResponseField>
+  </ResponseField>
+  
+  <ResponseField name="especialidad" type="object">
+    Specialty information object
+    
+    <ResponseField name="id" type="number">
+      Specialty ID
+    </ResponseField>
+    
+    <ResponseField name="nombre" type="string">
+      Specialty name
+    </ResponseField>
+  </ResponseField>
+</ResponseField>
+
+## Example Requests
+
+### Get All Appointments (Excluding Cancelled)
+
+```bash
+GET /turnos
+```
+
+### Get Appointments for Specific User
+
+```bash
+GET /turnos?user=juan.perez@example.com
+```
+
+### Get All Appointments Including Cancelled
+
+```bash
+GET /turnos?includeCancelled=true
+```
+
+### Combined Filters
+
+```bash
+GET /turnos?user=juan.perez@example.com&includeCancelled=1
+```
+
+## Example Response
+
+```json
+[
+  {
+    "id": 1001,
+    "usuarioId": 123,
+    "establecimientoId": 45,
+    "especialidadId": 7,
+    "fecha": "2026-03-20T00:00:00.000Z",
+    "hora": "10:00",
+    "estado": "pendiente",
+    "usuario": {
+      "id": 123,
+      "nombre": "Juan",
+      "apellido": "Pérez",
+      "mail": "juan.perez@example.com"
+    },
+    "establecimiento": {
+      "id": 45,
+      "nombre": "Hospital Central"
+    },
+    "especialidad": {
+      "id": 7,
+      "nombre": "Cardiología"
+    }
+  },
+  {
+    "id": 1002,
+    "usuarioId": 123,
+    "establecimientoId": 46,
+    "especialidadId": 8,
+    "fecha": "2026-03-25T00:00:00.000Z",
+    "hora": "15:30",
+    "estado": "completado",
+    "usuario": {
+      "id": 123,
+      "nombre": "Juan",
+      "apellido": "Pérez",
+      "mail": "juan.perez@example.com"
+    },
+    "establecimiento": {
+      "id": 46,
+      "nombre": "Clínica San José"
+    },
+    "especialidad": {
+      "id": 8,
+      "nombre": "Dermatología"
+    }
+  }
+]
+```

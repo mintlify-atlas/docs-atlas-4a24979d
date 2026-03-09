@@ -1,0 +1,92 @@
+---
+title: 'Login'
+api: 'POST /usuarios/login'
+description: 'Authenticate a user and receive a JWT token'
+---
+
+## Overview
+
+Authenticates an existing user with their email and password. Returns a JWT token that includes the user's role (usuario or admin) and can be used for subsequent authenticated requests.
+
+## Request Body
+
+<ParamField body="mail" type="string" required>
+  User's email address
+</ParamField>
+
+<ParamField body="contrasenia" type="string" required>
+  User's password
+</ParamField>
+
+## Response
+
+<ResponseField name="id" type="number">
+  Unique identifier for the user
+</ResponseField>
+
+<ResponseField name="nombre" type="string">
+  User's first name
+</ResponseField>
+
+<ResponseField name="apellido" type="string">
+  User's last name
+</ResponseField>
+
+<ResponseField name="mail" type="string">
+  User's email address
+</ResponseField>
+
+<ResponseField name="rol" type="string">
+  User's role in the system. Can be either `"usuario"` or `"admin"`
+</ResponseField>
+
+<ResponseField name="token" type="string">
+  JWT token for authentication. The token payload includes `sub` (user ID), `mail`, and `rol`
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X POST https://api.saludmap.com/usuarios/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mail": "juan.perez@example.com",
+    "contrasenia": "mySecurePassword123"
+  }'
+```
+
+## Example Response
+
+```json
+{
+  "id": 42,
+  "nombre": "Juan",
+  "apellido": "Pérez",
+  "mail": "juan.perez@example.com",
+  "rol": "usuario",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+## Error Responses
+
+### 401 Unauthorized
+
+Returned when credentials are incorrect.
+
+```json
+{
+  "statusCode": 401,
+  "message": "Credenciales incorrectas"
+}
+```
+
+## Implementation Details
+
+The login endpoint:
+- Validates credentials using bcrypt to compare the provided password with the hashed password in the database
+- Generates a JWT token containing the user's ID, email, and role
+- Returns user information along with the authentication token
+- The token should be included in the `Authorization` header as `Bearer <token>` for protected endpoints
+
+See: `usuarios.controller.ts:41-58` and `usuarios.service.ts:33-39`

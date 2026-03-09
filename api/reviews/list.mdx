@@ -1,0 +1,120 @@
+---
+title: 'List User Reviews'
+api: 'GET /resenias/mis-resenias'
+---
+
+Retrieves all reviews created by the authenticated user. This endpoint requires JWT authentication.
+
+<Note>
+  This endpoint requires authentication. Include a valid JWT token in the Authorization header.
+</Note>
+
+## Authentication
+
+```bash
+Authorization: Bearer <your_jwt_token>
+```
+
+The user ID is automatically extracted from the JWT token.
+
+## Response
+
+<ResponseField name="reviews" type="array">
+  Array of review objects created by the authenticated user
+  
+  <ResponseField name="id" type="number">
+    The unique identifier for the review
+  </ResponseField>
+  
+  <ResponseField name="usuarioId" type="number">
+    The ID of the user who created the review
+  </ResponseField>
+  
+  <ResponseField name="turnoId" type="number">
+    The ID of the appointment
+  </ResponseField>
+  
+  <ResponseField name="establecimientoId" type="number">
+    The ID of the healthcare establishment
+  </ResponseField>
+  
+  <ResponseField name="puntuacion" type="number">
+    Rating score (1-5)
+  </ResponseField>
+  
+  <ResponseField name="comentario" type="string">
+    The review comment
+  </ResponseField>
+  
+  <ResponseField name="createdAt" type="string">
+    Timestamp when the review was created
+  </ResponseField>
+  
+  <ResponseField name="establecimiento" type="object">
+    Establishment information
+    
+    <ResponseField name="id" type="number">
+      Establishment ID
+    </ResponseField>
+    
+    <ResponseField name="nombre" type="string">
+      Establishment name
+    </ResponseField>
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+```bash
+GET /resenias/mis-resenias
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+## Example Response
+
+```json
+[
+  {
+    "id": 501,
+    "usuarioId": 123,
+    "turnoId": 1001,
+    "establecimientoId": 45,
+    "puntuacion": 5,
+    "comentario": "Excelente atención, muy profesional y amable.",
+    "createdAt": "2026-03-09T16:30:00.000Z",
+    "establecimiento": {
+      "id": 45,
+      "nombre": "Hospital Central"
+    }
+  },
+  {
+    "id": 502,
+    "usuarioId": 123,
+    "turnoId": 1002,
+    "establecimientoId": 46,
+    "puntuacion": 4,
+    "comentario": "Buena atención, aunque el tiempo de espera fue un poco largo.",
+    "createdAt": "2026-03-08T14:15:00.000Z",
+    "establecimiento": {
+      "id": 46,
+      "nombre": "Clínica San José"
+    }
+  }
+]
+```
+
+## Error Responses
+
+### Unauthorized (Missing or Invalid Token)
+
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized"
+}
+```
+
+## Related Endpoints
+
+- [Create Review](/api/reviews/create) - Create a new review
+- [Get Reviews by Establishment](/api/reviews/get-by-establishment) - Get all reviews for a specific establishment

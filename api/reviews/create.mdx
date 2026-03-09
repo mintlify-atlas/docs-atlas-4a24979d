@@ -1,0 +1,139 @@
+---
+title: 'Create Review'
+api: 'POST /resenias'
+---
+
+Creates a new review (reseña) for a completed appointment at a healthcare establishment. This endpoint requires JWT authentication.
+
+<Note>
+  This endpoint requires authentication. Include a valid JWT token in the Authorization header.
+</Note>
+
+## Authentication
+
+```bash
+Authorization: Bearer <your_jwt_token>
+```
+
+The user ID is automatically extracted from the JWT token.
+
+## Request Body
+
+<ParamField body="turnoId" type="number" required>
+  The ID of the completed appointment being reviewed
+</ParamField>
+
+<ParamField body="establecimientoId" type="number" required>
+  The ID of the healthcare establishment being reviewed
+</ParamField>
+
+<ParamField body="puntuacion" type="number" required>
+  Rating score from 1 to 5 (1 = lowest, 5 = highest)
+</ParamField>
+
+<ParamField body="comentario" type="string" required>
+  Text comment describing the experience
+</ParamField>
+
+## Response
+
+<ResponseField name="id" type="number">
+  The unique identifier for the created review
+</ResponseField>
+
+<ResponseField name="usuarioId" type="number">
+  The ID of the user who created the review
+</ResponseField>
+
+<ResponseField name="turnoId" type="number">
+  The ID of the appointment
+</ResponseField>
+
+<ResponseField name="establecimientoId" type="number">
+  The ID of the healthcare establishment
+</ResponseField>
+
+<ResponseField name="puntuacion" type="number">
+  Rating score (1-5)
+</ResponseField>
+
+<ResponseField name="comentario" type="string">
+  The review comment
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  Timestamp when the review was created
+</ResponseField>
+
+## Example Request
+
+```bash
+POST /resenias
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Content-Type: application/json
+
+{
+  "turnoId": 1001,
+  "establecimientoId": 45,
+  "puntuacion": 5,
+  "comentario": "Excelente atención, muy profesional y amable. El tiempo de espera fue mínimo."
+}
+```
+
+## Example Response
+
+```json
+{
+  "id": 501,
+  "usuarioId": 123,
+  "turnoId": 1001,
+  "establecimientoId": 45,
+  "puntuacion": 5,
+  "comentario": "Excelente atención, muy profesional y amable. El tiempo de espera fue mínimo.",
+  "createdAt": "2026-03-09T16:30:00.000Z"
+}
+```
+
+## Error Responses
+
+### Unauthorized (Missing Token)
+
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized"
+}
+```
+
+### Validation Error
+
+```json
+{
+  "statusCode": 400,
+  "message": [
+    "puntuacion must not be greater than 5",
+    "puntuacion must not be less than 1"
+  ],
+  "error": "Bad Request"
+}
+```
+
+### Missing Required Fields
+
+```json
+{
+  "statusCode": 400,
+  "message": [
+    "turnoId should not be empty",
+    "comentario should not be empty"
+  ],
+  "error": "Bad Request"
+}
+```
+
+## Validation Rules
+
+- `turnoId`: Must be a valid number
+- `establecimientoId`: Must be a valid number
+- `puntuacion`: Must be between 1 and 5 (inclusive)
+- `comentario`: Cannot be empty

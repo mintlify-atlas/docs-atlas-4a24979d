@@ -1,0 +1,201 @@
+---
+title: Managing Saved Locations
+description: Save and organize your favorite places and frequently visited healthcare facilities
+---
+
+SaludMap allows you to save specific map locations for quick access later. This is useful for remembering healthcare facilities, home addresses, work locations, or any place you visit frequently.
+
+## Saving a Location
+
+<Steps>
+  <Step title="Position the map">
+    Navigate the map to the location you want to save. You can:
+    - Pan by dragging the map
+    - Zoom to the desired detail level
+    - Use your current location or search for a specific place
+  </Step>
+  
+  <Step title="Open the save location modal">
+    Click the "Guardar Ubicación" (Save Location) button. This is typically found in the map controls.
+  </Step>
+  
+  <Step title="Enter a name">
+    In the modal, provide a descriptive name for the location (required):
+    - Maximum 50 characters
+    - Examples: "Mi Casa", "Clínica Favorita", "Trabajo", "Hospital San Juan"
+  </Step>
+  
+  <Step title="Add a description (optional)">
+    Optionally, add a description with more details:
+    - Maximum 200 characters
+    - Examples: "Cerca del supermercado", "Entrada por calle lateral", "Consulta de cardiología"
+  </Step>
+  
+  <Step title="Review coordinates">
+    The modal displays the exact coordinates being saved:
+    - Latitude and longitude (up to 6 decimal places)
+    - GPS accuracy (if available)
+  </Step>
+  
+  <Step title="Save the location">
+    Click the "Guardar Ubicación" (Save Location) button. You'll see a success message: "Ubicación guardada exitosamente" (Location saved successfully).
+  </Step>
+</Steps>
+
+## Viewing Saved Locations
+
+<Steps>
+  <Step title="Open the locations list">
+    Click the "Ver Ubicaciones" (View Locations) button to open your saved locations list.
+  </Step>
+  
+  <Step title="Browse your locations">
+    The list displays all your saved locations with:
+    - **Name** - The title you gave the location
+    - **Description** - Any additional notes (if provided)
+    - **Coordinates** - Exact latitude and longitude
+    - **Save Date** - When the location was saved (e.g., "9 mar. 2026, 15:30")
+  </Step>
+  
+  <Step title="Use the action buttons">
+    Each location has two buttons:
+    - **📍 Go** - Navigate to this location on the map
+    - **🗑️ Delete** - Remove the location from your saved list
+  </Step>
+</Steps>
+
+## Navigating to a Saved Location
+
+<Steps>
+  <Step title="Open your locations list">
+    Click "Ver Ubicaciones" to view all saved locations.
+  </Step>
+  
+  <Step title="Select a location">
+    Find the location you want to visit in the list.
+  </Step>
+  
+  <Step title="Click the Go button">
+    Click the 📍 button next to the location. The map will:
+    - Automatically center on the saved coordinates
+    - Close the locations list modal
+    - Display any nearby facilities or markers
+  </Step>
+</Steps>
+
+## Deleting a Saved Location
+
+<Steps>
+  <Step title="Open your locations list">
+    Access your saved locations by clicking "Ver Ubicaciones".
+  </Step>
+  
+  <Step title="Find the location to delete">
+    Locate the location you want to remove from your list.
+  </Step>
+  
+  <Step title="Click the delete button">
+    Click the 🗑️ (trash) button next to the location.
+  </Step>
+  
+  <Step title="Confirm deletion">
+    A confirmation toast will appear asking: "¿Eliminar '[Location Name]'?"
+    
+    Click:
+    - **Eliminar** (Delete) - to permanently remove the location
+    - **Cancelar** (Cancel) - to keep the location
+  </Step>
+  
+  <Step title="Deletion confirmed">
+    If you confirm, you'll see: "Ubicación eliminada" (Location deleted) and the location will be removed from your list.
+  </Step>
+</Steps>
+
+## Location Information Display
+
+### Coordinate Format
+Coordinates are displayed with 6 decimal places for precision:
+- Example: `-34.603722, -58.381592`
+- This provides accuracy within a few meters
+
+### Timestamp Format
+Save dates use the Spanish locale format:
+- Short month name (ene., feb., mar., etc.)
+- Day and year
+- 24-hour time format
+- Example: "9 mar. 2026, 15:30"
+
+### Location Accuracy
+If available, the GPS accuracy is shown when saving:
+- Displayed in meters (e.g., "~15m")
+- Indicates how precise the coordinate reading is
+- Lower numbers mean higher accuracy
+
+## Empty State
+
+If you haven't saved any locations yet, you'll see:
+
+**Icon**: 📍
+
+**Message**: "No hay ubicaciones guardadas"
+
+**Subtitle**: "Usa el botón 'Guardar Ubicación' en el mapa para agregar tus lugares favoritos"
+
+## Storage and Persistence
+
+Saved locations are:
+- Stored in your browser's local database (IndexedDB)
+- Persistent across sessions
+- Available offline once saved
+- Specific to your device and browser
+
+<Warning>
+  Clearing your browser data or cache may delete your saved locations. Consider exporting important locations if available, or keep a backup list.
+</Warning>
+
+## Use Cases
+
+### Healthcare Facilities
+- Save your primary care doctor's office
+- Remember specialty clinics you visit regularly
+- Mark the nearest hospital for emergencies
+- Keep track of pharmacy locations
+
+### Personal Places
+- Home address
+- Work location
+- Family members' homes
+- Frequently visited areas
+
+### Trip Planning
+- Mark healthcare facilities near vacation destinations
+- Save locations of clinics in areas you travel to regularly
+- Remember where you found good services
+
+## Validation and Errors
+
+### Required Fields
+- **Name**: Must be filled in (at least 1 character after trimming whitespace)
+- **Current Location**: Must be available (map must have valid coordinates)
+
+### Error Messages
+
+You might see:
+- **"map.locationNameRequired"** - You must enter a name
+- **"map.noLocationAvailable"** - No valid coordinates to save
+- **"map.errorSaving"** - Failed to save to local database
+- **"map.errorLoading"** - Failed to load saved locations
+- **"map.errorDeleting"** - Failed to delete a location
+- **"map.errorGoingTo"** - Failed to navigate to location
+
+<Tip>
+  Give your saved locations descriptive names that help you remember why you saved them. Instead of "Location 1", use names like "Dr. Martinez Office" or "Emergency Clinic Downtown".
+</Tip>
+
+## Managing Multiple Locations
+
+There's no limit to how many locations you can save:
+- They're displayed in the order they were saved
+- Use descriptive names to keep them organized
+- Delete locations you no longer need to keep the list manageable
+- The list is scrollable if you have many saved locations
